@@ -132,3 +132,51 @@ char *get_command_path(char *command)
 	free(path_copy);
 	return (NULL);
 }
+/**
+ * execute_builtin - Execute a command with its arguments
+ * @command: The command to execute
+ * @args: Array of command and its arguments
+ *
+ * This function creates a child process to run the command. First gets
+ * the full path of the command, then forks and executes it. Parent
+ * waits for child to complete.
+ */
+void execute_builtin(char *command, char **args)
+{
+	pid_t pid;
+	char *cmd_path;
+
+	/* Get full path of command */
+	cmd_path = get_command_path(command);
+	if (!cmd_path)
+	{
+		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
+		return;
+	}
+
+	/* Create new process */
+	pid = fork();
+	if (pid == -1)
+	{
+		free(cmd_path);
+		perror("fork");
+		return;
+	}
+
+	if (pid == 0)
+	{
+		/* Child process: execute the command */
+		if (execve(cmd_path, args, environ) == -1)
+		{
+			perror("execve");
+			free(cmd_path);
+			exit(EXIT_FAILURE);
+		}
+	}
+	else
+	{
+		/* Parent process: wait for child and clean up */
+		wait(NULL);
+		free(cmd_path);
+	}
+}
