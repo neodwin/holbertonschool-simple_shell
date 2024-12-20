@@ -67,7 +67,7 @@ char *get_input(void)
 
 	/* Remove the newline character if present */
 	if (input_read > 0 && input[input_read - 1] == '\n')
-		input[input_read - 1] = '\0';
+	input[input_read - 1] = '\0';
 
 	return (input);
 }
@@ -111,6 +111,10 @@ void execute_command(char *input)
 	}
 	args[i] = NULL;  /* NULL terminate argument array */
 	/* Execute the command using path.c functionality */
+	if (args[0] == NULL || args[0][0] == '\0')
+	{
+	return;
+	}
 	execute_builtin(args[0], args);
 }
 
