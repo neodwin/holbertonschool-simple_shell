@@ -99,21 +99,31 @@ char *get_command_path(char *command)
     char *full_path;
     struct stat st;
 
-    if (command == NULL || *command == '\0')
+    if (!command || !*command)
         return (NULL);
 
     /* Check if command is an absolute or relative path */
     if (strchr(command, '/') != NULL)
     {
-        if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
-            return (strdup(command));
+        if (stat(command, &st) == 0)
+        {
+            if (st.st_mode & S_IXUSR)
+                return (strdup(command));
+            return (NULL);
+        }
         return (NULL);
     }
 
     /* Get PATH and handle empty PATH case */
     path = find_path_in_environ();
     if (!path)
+    {
+        /* Try in current directory if PATH is empty */
+        full_path = try_path(".", command);
+        if (full_path)
+            return (full_path);
         return (NULL);
+    }
 
     path_copy = strdup(path);
     if (!path_copy)
@@ -131,7 +141,9 @@ char *get_command_path(char *command)
         dir = strtok(NULL, ":");
     }
     free(path_copy);
-    return (NULL);
+
+    /* Try in current directory as last resort */
+    return (try_path(".", command));
 }
 
 /**
@@ -146,6 +158,7 @@ int execute_builtin(char *command, char **args)
     pid_t pid;
     char *cmd_path;
     int status = 0;
+    struct stat st;
 
     /* Get full path of command */
     cmd_path = get_command_path(command);
@@ -153,6 +166,14 @@ int execute_builtin(char *command, char **args)
     {
         fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
         return (127);
+    }
+
+    /* Check if file exists and is executable */
+    if (stat(cmd_path, &st) == -1 || !(st.st_mode & S_IXUSR))
+    {
+        fprintf(stderr, "%s: 1: %s: Permission denied\n", args[0], command);
+        free(cmd_path);
+        return (126);
     }
 
     /* Create new process */
@@ -167,12 +188,11 @@ int execute_builtin(char *command, char **args)
     if (pid == 0)
     {
         /* Child process: execute the command */
-        if (execve(cmd_path, args, environ) == -1)
-        {
-            fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
-            free(cmd_path);
-            _exit(127);
-        }
+        execve(cmd_path, args, environ);
+        /* If execve returns, there was an error */
+        fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+        free(cmd_path);
+        _exit(127);
     }
     else
     {

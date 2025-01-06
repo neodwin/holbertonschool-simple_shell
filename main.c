@@ -87,14 +87,18 @@ int execute_command(char *input)
     char *token;          /* For splitting input into tokens */
     int i = 0;
     int status = 0;
-    char *trimmed_input = input;
+    char *trimmed_input;
 
-    /* Skip leading spaces */
-    while (*trimmed_input == ' ' || *trimmed_input == '\t')
+    if (!input)
+        return (0);
+
+    /* Skip leading spaces and tabs */
+    trimmed_input = input;
+    while (*trimmed_input && (*trimmed_input == ' ' || *trimmed_input == '\t'))
         trimmed_input++;
 
-    /* Handle empty input */
-    if (*trimmed_input == '\0')
+    /* Handle empty input or input with only spaces */
+    if (*trimmed_input == '\0' || *trimmed_input == '\n')
         return (0);
 
     /* Handle 'exit' command */
@@ -112,12 +116,12 @@ int execute_command(char *input)
     }
 
     /* Split input into command and arguments */
-    token = strtok(trimmed_input, " \t");
+    token = strtok(trimmed_input, " \t\n");
     i = 0;
     while (token && i < 63)  /* Leave room for NULL terminator */
     {
         args[i] = token;
-        token = strtok(NULL, " \t");
+        token = strtok(NULL, " \t\n");
         i++;
     }
     args[i] = NULL;  /* NULL terminate argument array */
