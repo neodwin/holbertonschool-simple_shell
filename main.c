@@ -88,40 +88,56 @@ int execute_command(char *input)
     int i = 0;
     int status = 0;
     char *trimmed_input;
+    char *command_start;
 
     if (!input)
         return (0);
 
     /* Skip leading spaces and tabs */
     trimmed_input = input;
-    while (*trimmed_input && (*trimmed_input == ' ' || *trimmed_input == '\t'))
+    while (*trimmed_input && (*trimmed_input == ' ' || *trimmed_input == '\t' || *trimmed_input == '\n'))
         trimmed_input++;
 
     /* Handle empty input or input with only spaces */
-    if (*trimmed_input == '\0' || *trimmed_input == '\n')
+    if (*trimmed_input == '\0')
+        return (0);
+
+    /* Save start of command for later use */
+    command_start = trimmed_input;
+
+    /* Remove trailing spaces, tabs and newlines */
+    i = strlen(trimmed_input) - 1;
+    while (i >= 0 && (trimmed_input[i] == ' ' || trimmed_input[i] == '\t' || trimmed_input[i] == '\n'))
+    {
+        trimmed_input[i] = '\0';
+        i--;
+    }
+
+    /* Handle empty input after trimming */
+    if (*command_start == '\0')
         return (0);
 
     /* Handle 'exit' command */
-    if (strcmp(trimmed_input, "exit") == 0)
+    if (strcmp(command_start, "exit") == 0)
     {
         free(input);
         exit(0);
     }
 
     /* Handle 'env' command */
-    if (strcmp(trimmed_input, "env") == 0)
+    if (strcmp(command_start, "env") == 0)
     {
         handle_env();
         return (0);
     }
 
     /* Split input into command and arguments */
-    token = strtok(trimmed_input, " \t\n");
+    token = strtok(command_start, " \t");
     i = 0;
     while (token && i < 63)  /* Leave room for NULL terminator */
     {
         args[i] = token;
-        token = strtok(NULL, " \t\n");
+        token = strtok(NULL, " \t");
         i++;
     }
     args[i] = NULL;  /* NULL terminate argument array */
