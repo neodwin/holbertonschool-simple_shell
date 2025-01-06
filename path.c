@@ -151,7 +151,7 @@ void execute_builtin(char *command, char **args)
     if (!cmd_path)
     {
         fprintf(stderr, "./hsh: 1: %s: not found\n", command);
-        return;
+        exit(127);
     }
 
     /* Create new process */
@@ -160,7 +160,7 @@ void execute_builtin(char *command, char **args)
     {
         free(cmd_path);
         perror("fork");
-        return;
+        exit(1);
     }
 
     if (pid == 0)
@@ -170,13 +170,16 @@ void execute_builtin(char *command, char **args)
         {
             perror("execve");
             free(cmd_path);
-            exit(EXIT_FAILURE);
+            exit(127);
         }
     }
     else
     {
         /* Parent process: wait for child and clean up */
-        wait(NULL);
+        int status;
+        waitpid(pid, &status, 0);
         free(cmd_path);
+        if (WIFEXITED(status))
+            exit(WEXITSTATUS(status));
     }
 }
