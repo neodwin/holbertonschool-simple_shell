@@ -168,9 +168,9 @@ void execute_builtin(char *command, char **args)
         /* Child process: execute the command */
         if (execve(cmd_path, args, environ) == -1)
         {
-            perror("execve");
             free(cmd_path);
-            exit(EXIT_FAILURE);
+            fprintf(stderr, "./hsh: 1: %s: not found\n", command);
+            _exit(127);
         }
     }
     else
