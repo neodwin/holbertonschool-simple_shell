@@ -167,14 +167,14 @@ int execute_builtin(char *command, char **args)
     cmd_path = get_command_path(command);
     if (!cmd_path)
     {
-        fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+        fprintf(stderr, "./hsh: 1: %s: not found\n", command);
         return (127);
     }
 
     /* Check if file exists and is executable */
     if (stat(cmd_path, &st) == -1 || !(st.st_mode & S_IXUSR))
     {
-        fprintf(stderr, "%s: 1: %s: Permission denied\n", args[0], command);
+        fprintf(stderr, "./hsh: 1: %s: Permission denied\n", command);
         free(cmd_path);
         return (126);
     }
@@ -193,7 +193,7 @@ int execute_builtin(char *command, char **args)
         /* Child process: execute the command */
         execve(cmd_path, args, environ);
         /* If execve returns, there was an error */
-        fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+        fprintf(stderr, "./hsh: 1: %s: not found\n", command);
         free(cmd_path);
         _exit(127);
     }
