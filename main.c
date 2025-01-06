@@ -115,11 +115,6 @@ void execute_command(char *input)
     {
         return;
     }
-    if (access(args[0], F_OK) == -1 && !get_command_path(args[0]))
-    {
-        fprintf(stderr, "./hsh: 1: %s: not found\n", args[0]);
-        exit(127);
-    }
     execute_builtin(args[0], args);
 }
 
