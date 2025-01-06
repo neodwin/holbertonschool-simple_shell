@@ -67,7 +67,7 @@ char *get_input(void)
 
 	/* Remove the newline character if present */
 	if (input_read > 0 && input[input_read - 1] == '\n')
-		input[input_read - 1] = '\0';
+	input[input_read - 1] = '\0';
 
 	return (input);
 }
@@ -82,29 +82,40 @@ char *get_input(void)
  */
 void execute_command(char *input)
 {
+	char *args[64];       /* Array to store command and arguments */
+	char *token;          /* For splitting input into tokens */
 	int i = 0;
-
-	/* Skip leading spaces */
-	while (input[i] == ' ')
+	/* Skip leading spaces in input */
+	while (input[i] == ' ' && input[i])
 		i++;
-
-	/* Handle the "exit" command */
+	/* Handle 'exit' command */
 	if (strcmp(&input[i], "exit") == 0)
 	{
 		free(input);
 		exit(0);
 	}
-
-	/* Handle the "env" command */
+	/* Handle 'env' command */
 	if (strcmp(&input[i], "env") == 0)
 	{
 		handle_env();
+		return;
 	}
-	else if (input[i] != '\0')
+	/* Split input into command and arguments */
+	token = strtok(&input[i], " ");
+	i = 0;
+	while (token && i < 63)  /* Leave room for NULL terminator */
 	{
-		/* Unknown command */
-		printf("Commande inconnue : %s\n", &input[i]);
+		args[i] = token;
+		token = strtok(NULL, " ");
+		i++;
 	}
+	args[i] = NULL;  /* NULL terminate argument array */
+	/* Execute the command using path.c functionality */
+	if (args[0] == NULL || args[0][0] == '\0')
+	{
+	return;
+	}
+	execute_builtin(args[0], args);
 }
 
 /**
