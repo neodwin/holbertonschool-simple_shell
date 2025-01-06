@@ -177,12 +177,10 @@ int execute_builtin(char *command, char **args)
 	char *cmd_path;
 	int status;
 
-	/* Get full path of command */
 	cmd_path = get_command_path(command);
 	if (!cmd_path)
 		return -1;
 
-	/* Create new process */
 	pid = fork();
 	if (pid == -1)
 	{
@@ -192,19 +190,14 @@ int execute_builtin(char *command, char **args)
 
 	if (pid == 0)
 	{
-		/* Child process: execute the command */
 		if (execve(cmd_path, args, environ) == -1)
 		{
 			free(cmd_path);
 			exit(127);
 		}
 	}
-	else
-	{
-		/* Parent process: wait for child and clean up */
-		waitpid(pid, &status, 0);
-		free(cmd_path);
-		return WEXITSTATUS(status);
-	}
-	return 0;
+
+	waitpid(pid, &status, 0);
+	free(cmd_path);
+	return WEXITSTATUS(status);
 }

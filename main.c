@@ -128,15 +128,16 @@ void execute_command(char *input)
 	if (args[0] == NULL || args[0][0] == '\0')
 		return;
 
-	/* Get command path before forking */
+	/* Check if command exists before forking */
 	cmd_path = get_command_path(args[0]);
 	if (!cmd_path)
 	{
 		fprintf(stderr, "./hsh: 1: %s: not found\n", args[0]);
+		free(input);
 		exit(127);
 	}
 
-	/* Execute command only if it exists */
+	/* Execute command */
 	execute_builtin(args[0], args);
 }
 
