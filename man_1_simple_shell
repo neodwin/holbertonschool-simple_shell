@@ -1,0 +1,67 @@
+.TH HSH 1 "December 2023" "1.0" "HSH Manual"
+
+.SH NAME
+hsh \- simple shell command interpreter
+
+.SH SYNOPSIS
+.B hsh
+
+.SH DESCRIPTION
+.B hsh
+is a basic UNIX command line interpreter. It reads commands from standard input and executes them.
+
+.SH USAGE
+The shell can be used in interactive mode by running ./hsh. It displays a prompt "$ " and waits for user input.
+Commands are executed by typing them and pressing enter.
+
+.SH FEATURES
+.IP \[bu]
+Executes commands from the PATH
+.IP \[bu]
+Handles command lines with arguments
+.IP \[bu]
+Implements built-in commands: exit, env
+.IP \[bu]
+Handles the PATH environment variable
+.IP \[bu]
+Implements error handling
+
+.SH BUILT-IN COMMANDS
+.TP
+.B exit
+Exits the shell
+.TP
+.B env
+Prints the current environment
+
+.SH EXAMPLES
+.TP
+Basic command:
+.B $ ls
+.TP
+Command with arguments:
+.B $ ls -l
+.TP
+Using PATH:
+.B $ pwd
+.TP
+Full path command:
+.B $ /bin/ls
+
+.SH EXIT VALUES
+.TP
+.B 0
+Success
+.TP
+.B 127
+Command not found
+
+.SH AUTHORS
+Edwin Dervaux <edwin.dervaux@gmail.com>
+.br
+Ewan Lemaire <ewan.lemaire@gmail.com>
+.br
+Frederic Bourouliou <frederic.bourouliou@gmail.com>
+
+.SH SEE ALSO
+.BR sh(1) 
