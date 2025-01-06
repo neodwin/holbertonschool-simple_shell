@@ -98,6 +98,7 @@ char *get_command_path(char *command)
     char *dir;
     char *full_path;
     struct stat st;
+    char current_dir[1024];
 
     if (!command || !*command)
         return (NULL);
@@ -105,12 +106,28 @@ char *get_command_path(char *command)
     /* Check if command is an absolute or relative path */
     if (strchr(command, '/') != NULL)
     {
-        if (stat(command, &st) == 0)
-        {
-            if (st.st_mode & S_IXUSR)
-                return (strdup(command));
+        /* Get current directory for relative paths */
+        if (getcwd(current_dir, sizeof(current_dir)) == NULL)
             return (NULL);
+
+        /* If path starts with ./ or ../ */
+        if (command[0] == '.')
+        {
+            full_path = malloc(strlen(current_dir) + strlen(command) + 2);
+            if (!full_path)
+                return (NULL);
+            sprintf(full_path, "%s/%s", current_dir, command);
         }
+        else
+        {
+            full_path = strdup(command);
+            if (!full_path)
+                return (NULL);
+        }
+
+        if (stat(full_path, &st) == 0 && (st.st_mode & S_IXUSR))
+            return (full_path);
+        free(full_path);
         return (NULL);
     }
 
@@ -118,7 +135,6 @@ char *get_command_path(char *command)
     path = find_path_in_environ();
     if (!path)
     {
-        /* Try in current directory if PATH is empty */
         full_path = try_path(".", command);
         if (full_path)
             return (full_path);
@@ -142,7 +158,6 @@ char *get_command_path(char *command)
     }
     free(path_copy);
 
-    /* Try in current directory as last resort */
     return (try_path(".", command));
 }
 
