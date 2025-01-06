@@ -2,10 +2,6 @@
 # This file lists all contributors to the repository.
 # See generate-authors.sh to make modifications.
 
-Edwin Dervaux <edwin.dervaux@gmail.com>
-Ewan Lemaire <ewan.lemaire@gmail.com>
-Frederic Bourouliou <frederic.bourouliou@gmail.com>
-
-# Contributors from Git history:
+Frederic Bourouliou <bourouliou@gmail.com>
 neodwin <edwin.dervaux@gmail.com>
-EOF 
+Ewan Lemaire <ewan.lemaire@gmail.com>
