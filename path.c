@@ -73,11 +73,11 @@ char *try_path(char *dir, char *command)
     /* Combine dir and command to create full path */
     sprintf(full_path, "%s/%s", dir, command);
 
-    /* Check if path exists and is accessible */
-    if (stat(full_path, &st) == 0)
+    /* Check if path exists and is executable */
+    if (stat(full_path, &st) == 0 && (st.st_mode & S_IXUSR))
         return (full_path);
 
-    /* Path not found, free memory and return NULL */
+    /* Path not found or not executable, free memory and return NULL */
     free(full_path);
     return (NULL);
 }
