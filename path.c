@@ -50,7 +50,6 @@ char *find_path_in_environ(void)
 char *check_current_path(char *command)
 {
 	char *clean_path;
-	char *token;
 	int i;
 
 	/* Return NULL if command is NULL */
