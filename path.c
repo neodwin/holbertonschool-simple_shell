@@ -145,6 +145,7 @@ void execute_builtin(char *command, char **args)
 {
     pid_t pid;
     char *cmd_path;
+    int status;
 
     /* Get full path of command */
     cmd_path = get_command_path(command);
@@ -176,7 +177,9 @@ void execute_builtin(char *command, char **args)
     else
     {
         /* Parent process: wait for child and clean up */
-        wait(NULL);
+        waitpid(pid, &status, 0);
         free(cmd_path);
+        if (WIFEXITED(status))
+            exit(WEXITSTATUS(status));
     }
 }
