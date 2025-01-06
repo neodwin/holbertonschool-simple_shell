@@ -113,7 +113,12 @@ void execute_command(char *input)
     /* Execute the command using path.c functionality */
     if (args[0] == NULL || args[0][0] == '\0')
     {
-    return;
+        return;
+    }
+    if (access(args[0], F_OK) == -1 && !get_command_path(args[0]))
+    {
+        fprintf(stderr, "./hsh: 1: %s: not found\n", args[0]);
+        exit(127);
     }
     execute_builtin(args[0], args);
 }

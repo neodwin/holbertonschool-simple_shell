@@ -150,7 +150,6 @@ void execute_builtin(char *command, char **args)
     cmd_path = get_command_path(command);
     if (!cmd_path)
     {
-        fprintf(stderr, "./hsh: 1: %s: not found\n", command);
         return;
     }
 
@@ -170,7 +169,7 @@ void execute_builtin(char *command, char **args)
         {
             perror("execve");
             free(cmd_path);
-            exit(EXIT_FAILURE);
+            exit(1);
         }
     }
     else
