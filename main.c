@@ -85,6 +85,8 @@ void execute_command(char *input)
     char *args[64];       /* Array to store command and arguments */
     char *token;          /* For splitting input into tokens */
     int i = 0;
+    int status;
+
     /* Skip leading spaces in input */
     while (input[i] == ' ')
         i++;
@@ -115,7 +117,9 @@ void execute_command(char *input)
     {
         return;
     }
-    execute_builtin(args[0], args);
+    status = execute_builtin(args[0], args);
+    if (status != 0)
+        exit(status);
 }
 
 /**

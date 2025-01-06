@@ -135,26 +135,26 @@ char *get_command_path(char *command)
     free(path_copy);
     return (NULL);
 }
+
 /**
  * execute_builtin - Execute a command with its arguments
  * @command: The command to execute
  * @args: Array of command and its arguments
  *
- * This function creates a child process to run the command. First gets
- * the full path of the command, then forks and executes it. Parent
- * waits for child to complete.
+ * Return: Exit status of the command (127 if not found, 0 on success)
  */
-void execute_builtin(char *command, char **args)
+int execute_builtin(char *command, char **args)
 {
     pid_t pid;
     char *cmd_path;
+    int status = 0;
 
     /* Get full path of command */
     cmd_path = get_command_path(command);
     if (!cmd_path)
     {
         fprintf(stderr, "./hsh: 1: %s: not found\n", command);
-        exit(127);
+        return (127);
     }
 
     /* Create new process */
@@ -163,7 +163,7 @@ void execute_builtin(char *command, char **args)
     {
         free(cmd_path);
         perror("fork");
-        exit(1);
+        return (1);
     }
 
     if (pid == 0)
@@ -173,14 +173,16 @@ void execute_builtin(char *command, char **args)
         {
             fprintf(stderr, "./hsh: 1: %s: not found\n", command);
             free(cmd_path);
-            exit(127);
+            _exit(127);
         }
     }
     else
     {
         /* Parent process: wait for child and clean up */
-        int status;
         waitpid(pid, &status, 0);
         free(cmd_path);
+        if (WIFEXITED(status))
+            return (WEXITSTATUS(status));
     }
+    return (status);
 }
