@@ -82,39 +82,61 @@ char *get_input(void)
  */
 void execute_command(char *input)
 {
-	char *args[64];       /* Array to store command and arguments */
-	char *token;          /* For splitting input into tokens */
+	char *args[64];
+	char *token;
 	int i = 0;
+	char *cmd_path;
+
+	/* Check if input is NULL */
+	if (!input)
+		return;
+
 	/* Skip leading spaces in input */
 	while (input[i] == ' ')
 		i++;
+
+	/* Check if remaining input is empty */
+	if (input[i] == '\0')
+		return;
+
 	/* Handle 'exit' command */
 	if (strcmp(&input[i], "exit") == 0)
 	{
 		free(input);
 		exit(0);
 	}
+
 	/* Handle 'env' command */
 	if (strcmp(&input[i], "env") == 0)
 	{
 		handle_env();
 		return;
 	}
+
 	/* Split input into command and arguments */
 	token = strtok(&input[i], " ");
 	i = 0;
-	while (token && i < 63)  /* Leave room for NULL terminator */
+	while (token && i < 63)
 	{
 		args[i] = token;
 		token = strtok(NULL, " ");
 		i++;
 	}
-	args[i] = NULL;  /* NULL terminate argument array */
-	/* Execute the command using path.c functionality */
+	args[i] = NULL;
+
+	/* Check if command exists before trying to execute */
 	if (args[0] == NULL || args[0][0] == '\0')
+		return;
+
+	/* Get command path before forking */
+	cmd_path = get_command_path(args[0]);
+	if (!cmd_path)
 	{
-	return;
+		fprintf(stderr, "./hsh: 1: %s: not found\n", args[0]);
+		exit(127);
 	}
+
+	/* Execute command only if it exists */
 	execute_builtin(args[0], args);
 }
 

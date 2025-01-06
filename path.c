@@ -4,29 +4,37 @@
  * find_path_in_environ - Searches through environ array for PATH
  *
  * This function scans environment variables to find PATH variable.
- * If PATH is not found in environment, returns a default value.
+ * If PATH is not found in environment or is empty, returns NULL.
+ * Only looks for exact "PATH=" match, ignores similar variables.
  *
- * Return: Pointer to PATH value if found, or "/bin:/usr/bin" if not found
+ * Return: Pointer to PATH value if found and not empty, NULL otherwise
  */
 char *find_path_in_environ(void)
 {
 	int i = 0;
 	char *path = NULL;
 
+	/* Return NULL if environ is NULL */
+	if (!environ)
+		return (NULL);
+
 	/* Loop through environment variables until PATH is found */
 	while (environ[i])
 	{
-		/* Check if current env variable starts with "PATH=" */
+		/* Check if current env variable is exactly "PATH=" */
+		if (strcmp(environ[i], "PATH=") == 0)
+			return (NULL);  /* PATH exists but is empty */
+
 		if (strncmp(environ[i], "PATH=", 5) == 0)
 		{
-			/* Skip "PATH=" prefix to get the value */
 			path = environ[i] + 5;
-			break;
+			if (*path == '\0')
+				return (NULL);  /* PATH exists but is empty */
+			return (path);      /* Return valid PATH value */
 		}
 		i++;
 	}
-	/* Return found PATH or default value if not found */
-	return (path ? path : "/bin:/usr/bin");
+	return (NULL);  /* PATH not found */
 }
 
 /**
@@ -41,17 +49,37 @@ char *find_path_in_environ(void)
  */
 char *check_current_path(char *command)
 {
+	char *clean_path;
+	char *token;
+	int i;
+
 	/* Return NULL if command is NULL */
 	if (command == NULL)
 		return (NULL);
 
 	/* Check if command contains a path separator */
-	if (strstr(command, "/") != NULL)
-		/* If it's a path, duplicate it and return */
-		return (strdup(command));
+	if (strchr(command, '/') == NULL)
+		return (NULL);
 
-	/* Not a path, return NULL */
-	return (NULL);
+	/* Duplicate the command string */
+	clean_path = strdup(command);
+	if (!clean_path)
+		return (NULL);
+
+	/* Remove consecutive slashes and handle . and .. */
+	i = 0;
+	while (clean_path[i])
+	{
+		/* Skip multiple consecutive slashes */
+		if (clean_path[i] == '/' && clean_path[i + 1] == '/')
+		{
+			memmove(&clean_path[i], &clean_path[i + 1], strlen(&clean_path[i]));
+			continue;
+		}
+		i++;
+	}
+
+	return clean_path;
 }
 
 /**
@@ -107,8 +135,12 @@ char *get_command_path(char *command)
 	if (full_path)
 		return (full_path);
 
-	/* Get PATH and create a copy for modification */
+	/* Get PATH and check if it exists */
 	path = find_path_in_environ();
+	if (!path)
+		return (NULL);
+
+	/* Create a copy of PATH for modification */
 	path_copy = malloc(strlen(path) + 1);
 	if (!path_copy)
 		return (NULL);
@@ -132,35 +164,31 @@ char *get_command_path(char *command)
 	free(path_copy);
 	return (NULL);
 }
+
 /**
  * execute_builtin - Execute a command with its arguments
  * @command: The command to execute
  * @args: Array of command and its arguments
  *
- * This function creates a child process to run the command. First gets
- * the full path of the command, then forks and executes it. Parent
- * waits for child to complete.
+ * Return: 0 on success, -1 on failure
  */
-void execute_builtin(char *command, char **args)
+int execute_builtin(char *command, char **args)
 {
 	pid_t pid;
 	char *cmd_path;
+	int status;
 
 	/* Get full path of command */
 	cmd_path = get_command_path(command);
 	if (!cmd_path)
-	{
-		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
-		return;
-	}
+		return -1;
 
 	/* Create new process */
 	pid = fork();
 	if (pid == -1)
 	{
 		free(cmd_path);
-		perror("fork");
-		return;
+		return -1;
 	}
 
 	if (pid == 0)
@@ -168,15 +196,16 @@ void execute_builtin(char *command, char **args)
 		/* Child process: execute the command */
 		if (execve(cmd_path, args, environ) == -1)
 		{
-			perror("execve");
 			free(cmd_path);
-			exit(EXIT_FAILURE);
+			exit(127);
 		}
 	}
 	else
 	{
 		/* Parent process: wait for child and clean up */
-		wait(NULL);
+		waitpid(pid, &status, 0);
 		free(cmd_path);
+		return WEXITSTATUS(status);
 	}
+	return 0;
 }
