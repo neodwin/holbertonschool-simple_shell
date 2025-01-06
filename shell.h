@@ -38,7 +38,7 @@ int execute_builtin(char *command, char **args);
  */
 void display_prompt(void);
 char *get_input(void);
-void execute_command(char *input);
+int execute_command(char *input);
 void handle_env(void);
 
 /*

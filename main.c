@@ -6,11 +6,12 @@
  * This function initializes the shell, handles user input, and
  * executes commands in a loop until the user exits.
  *
- * Return: 0 on success
+ * Return: Last command's exit status
  */
 int main(void)
 {
     char *input;
+    int last_status = 0;
 
     while (1)
     {
@@ -24,11 +25,13 @@ int main(void)
             break;
 
         /* Process and execute the command */
-        execute_command(input);
+        last_status = execute_command(input);
         free(input);
+        if (!isatty(STDIN_FILENO))
+            exit(last_status);
     }
 
-    return (0);
+    return (last_status);
 }
 
 /**
@@ -76,16 +79,14 @@ char *get_input(void)
  * execute_command - Processes and executes a command
  * @input: The command entered by the user
  *
- * This function checks the input command and performs the corresponding
- * action. It handles built-in commands like "exit" and "env" or
- * reports unknown commands.
+ * Return: Exit status of the command
  */
-void execute_command(char *input)
+int execute_command(char *input)
 {
     char *args[64];       /* Array to store command and arguments */
     char *token;          /* For splitting input into tokens */
     int i = 0;
-    int status;
+    int status = 0;
 
     /* Skip leading spaces in input */
     while (input[i] == ' ')
@@ -100,7 +101,7 @@ void execute_command(char *input)
     if (strcmp(&input[i], "env") == 0)
     {
         handle_env();
-        return;
+        return (0);
     }
     /* Split input into command and arguments */
     token = strtok(&input[i], " ");
@@ -115,11 +116,10 @@ void execute_command(char *input)
     /* Execute the command using path.c functionality */
     if (args[0] == NULL || args[0][0] == '\0')
     {
-        return;
+        return (0);
     }
     status = execute_builtin(args[0], args);
-    if (status != 0)
-        exit(status);
+    return (status);
 }
 
 /**
