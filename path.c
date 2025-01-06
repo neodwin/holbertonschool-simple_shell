@@ -12,6 +12,7 @@ char *find_path_in_environ(void)
 {
     int i = 0;
     char *path = NULL;
+    char *default_path = "/bin:/usr/bin";
 
     /* Loop through environment variables until PATH is found */
     while (environ[i])
@@ -21,12 +22,14 @@ char *find_path_in_environ(void)
         {
             /* Skip "PATH=" prefix to get the value */
             path = environ[i] + 5;
-            break;
+            if (*path != '\0')  /* Check if PATH is not empty */
+                return (path);
+            return (default_path);
         }
         i++;
     }
-    /* Return found PATH or default value if not found */
-    return (path ? path : "/bin:/usr/bin");
+    /* Return default value if PATH not found or empty */
+    return (default_path);
 }
 
 /**
