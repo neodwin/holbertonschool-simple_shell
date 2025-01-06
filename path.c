@@ -145,14 +145,13 @@ void execute_builtin(char *command, char **args)
 {
     pid_t pid;
     char *cmd_path;
-    int status;
 
     /* Get full path of command */
     cmd_path = get_command_path(command);
     if (!cmd_path)
     {
         fprintf(stderr, "./hsh: 1: %s: not found\n", command);
-        exit(127);
+        return;
     }
 
     /* Create new process */
@@ -169,17 +168,15 @@ void execute_builtin(char *command, char **args)
         /* Child process: execute the command */
         if (execve(cmd_path, args, environ) == -1)
         {
+            perror("execve");
             free(cmd_path);
-            fprintf(stderr, "./hsh: 1: %s: not found\n", command);
-            _exit(127);
+            exit(EXIT_FAILURE);
         }
     }
     else
     {
         /* Parent process: wait for child and clean up */
-        waitpid(pid, &status, 0);
+        wait(NULL);
         free(cmd_path);
-        if (WIFEXITED(status))
-            exit(WEXITSTATUS(status));
     }
 }
