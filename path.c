@@ -12,24 +12,17 @@ char *find_path_in_environ(void)
 {
     int i = 0;
     char *path = NULL;
-    char *default_path = "/bin:/usr/bin";
 
-    /* Loop through environment variables until PATH is found */
     while (environ[i])
     {
-        /* Check if current env variable starts with "PATH=" */
         if (strncmp(environ[i], "PATH=", 5) == 0)
         {
-            /* Skip "PATH=" prefix to get the value */
             path = environ[i] + 5;
-            if (*path != '\0')  /* Check if PATH is not empty */
-                return (path);
-            return (default_path);
+            return (*path == '\0' ? NULL : path);
         }
         i++;
     }
-    /* Return default value if PATH not found or empty */
-    return (default_path);
+    return (NULL);
 }
 
 /**
@@ -104,34 +97,39 @@ char *get_command_path(char *command)
     char *path_copy;
     char *dir;
     char *full_path;
+    struct stat st;
 
-    /* First check if command is a path */
-    full_path = check_current_path(command);
-    if (full_path)
-        return (full_path);
+    if (command == NULL || *command == '\0')
+        return (NULL);
 
-    /* Get PATH and create a copy for modification */
+    /* Check if command is an absolute or relative path */
+    if (strchr(command, '/') != NULL)
+    {
+        if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
+            return (strdup(command));
+        return (NULL);
+    }
+
+    /* Get PATH and handle empty PATH case */
     path = find_path_in_environ();
-    path_copy = malloc(strlen(path) + 1);
+    if (!path)
+        return (NULL);
+
+    path_copy = strdup(path);
     if (!path_copy)
         return (NULL);
-    strcpy(path_copy, path);
 
-    /* Try each directory in PATH */
     dir = strtok(path_copy, ":");
     while (dir)
     {
-        /* Try to find command in current directory */
         full_path = try_path(dir, command);
         if (full_path)
         {
             free(path_copy);
             return (full_path);
         }
-        /* Move to next directory in PATH */
         dir = strtok(NULL, ":");
     }
-    /* Command not found in any directory */
     free(path_copy);
     return (NULL);
 }
@@ -153,7 +151,7 @@ int execute_builtin(char *command, char **args)
     cmd_path = get_command_path(command);
     if (!cmd_path)
     {
-        fprintf(stderr, "./hsh: 1: %s: not found\n", command);
+        fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
         return (127);
     }
 
@@ -171,7 +169,7 @@ int execute_builtin(char *command, char **args)
         /* Child process: execute the command */
         if (execve(cmd_path, args, environ) == -1)
         {
-            fprintf(stderr, "./hsh: 1: %s: not found\n", command);
+            fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
             free(cmd_path);
             _exit(127);
         }

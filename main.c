@@ -87,37 +87,45 @@ int execute_command(char *input)
     char *token;          /* For splitting input into tokens */
     int i = 0;
     int status = 0;
+    char *trimmed_input = input;
 
-    /* Skip leading spaces in input */
-    while (input[i] == ' ')
-        i++;
+    /* Skip leading spaces */
+    while (*trimmed_input == ' ' || *trimmed_input == '\t')
+        trimmed_input++;
+
+    /* Handle empty input */
+    if (*trimmed_input == '\0')
+        return (0);
+
     /* Handle 'exit' command */
-    if (strcmp(&input[i], "exit") == 0)
+    if (strcmp(trimmed_input, "exit") == 0)
     {
         free(input);
         exit(0);
     }
+
     /* Handle 'env' command */
-    if (strcmp(&input[i], "env") == 0)
+    if (strcmp(trimmed_input, "env") == 0)
     {
         handle_env();
         return (0);
     }
+
     /* Split input into command and arguments */
-    token = strtok(&input[i], " ");
+    token = strtok(trimmed_input, " \t");
     i = 0;
     while (token && i < 63)  /* Leave room for NULL terminator */
     {
         args[i] = token;
-        token = strtok(NULL, " ");
+        token = strtok(NULL, " \t");
         i++;
     }
     args[i] = NULL;  /* NULL terminate argument array */
-    /* Execute the command using path.c functionality */
+
+    /* Execute the command */
     if (args[0] == NULL || args[0][0] == '\0')
-    {
         return (0);
-    }
+
     status = execute_builtin(args[0], args);
     return (status);
 }
