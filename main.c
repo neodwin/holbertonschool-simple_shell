@@ -10,25 +10,25 @@
  */
 int main(void)
 {
-	char *input;
+    char *input;
 
-	while (1)
-	{
-		/* Check if input is from an interactive terminal */
-		if (isatty(STDIN_FILENO))
-			display_prompt();
+    while (1)
+    {
+        /* Check if input is from an interactive terminal */
+        if (isatty(STDIN_FILENO))
+            display_prompt();
 
-		/* Read user input */
-		input = get_input();
-		if (input == NULL)
-			break;
+        /* Read user input */
+        input = get_input();
+        if (input == NULL)
+            break;
 
-		/* Process and execute the command */
-		execute_command(input);
-		free(input);
-	}
+        /* Process and execute the command */
+        execute_command(input);
+        free(input);
+    }
 
-	return (0);
+    return (0);
 }
 
 /**
@@ -39,8 +39,8 @@ int main(void)
  */
 void display_prompt(void)
 {
-	printf("$ ");
-	fflush(stdout);
+    printf("$ ");
+    fflush(stdout);
 }
 
 /**
@@ -53,23 +53,23 @@ void display_prompt(void)
  */
 char *get_input(void)
 {
-	char *input = NULL;
-	size_t input_size = 0;
-	ssize_t input_read;
+    char *input = NULL;
+    size_t input_size = 0;
+    ssize_t input_read;
 
-	/* Read a line of input */
-	input_read = getline(&input, &input_size, stdin);
-	if (input_read == EOF)
-	{
-		free(input);
-		return (NULL);
-	}
+    /* Read a line of input */
+    input_read = getline(&input, &input_size, stdin);
+    if (input_read == EOF)
+    {
+        free(input);
+        return (NULL);
+    }
 
-	/* Remove the newline character if present */
-	if (input_read > 0 && input[input_read - 1] == '\n')
-	input[input_read - 1] = '\0';
+    /* Remove the newline character if present */
+    if (input_read > 0 && input[input_read - 1] == '\n')
+    input[input_read - 1] = '\0';
 
-	return (input);
+    return (input);
 }
 
 /**
@@ -82,63 +82,40 @@ char *get_input(void)
  */
 void execute_command(char *input)
 {
-	char *args[64];
-	char *token;
-	int i = 0;
-	char *cmd_path;
-
-	/* Check if input is NULL */
-	if (!input)
-		return;
-
-	/* Skip leading spaces in input */
-	while (input[i] == ' ')
-		i++;
-
-	/* Check if remaining input is empty */
-	if (input[i] == '\0')
-		return;
-
-	/* Handle 'exit' command */
-	if (strcmp(&input[i], "exit") == 0)
-	{
-		free(input);
-		exit(0);
-	}
-
-	/* Handle 'env' command */
-	if (strcmp(&input[i], "env") == 0)
-	{
-		handle_env();
-		return;
-	}
-
-	/* Split input into command and arguments */
-	token = strtok(&input[i], " ");
-	i = 0;
-	while (token && i < 63)
-	{
-		args[i] = token;
-		token = strtok(NULL, " ");
-		i++;
-	}
-	args[i] = NULL;
-
-	/* Check if command exists before trying to execute */
-	if (args[0] == NULL || args[0][0] == '\0')
-		return;
-
-	/* Check if command exists before forking */
-	cmd_path = get_command_path(args[0]);
-	if (!cmd_path)
-	{
-		fprintf(stderr, "./hsh: 1: %s: not found\n", args[0]);
-		free(input);
-		exit(127);
-	}
-
-	/* Execute command */
-	execute_builtin(args[0], args);
+    char *args[64];       /* Array to store command and arguments */
+    char *token;          /* For splitting input into tokens */
+    int i = 0;
+    /* Skip leading spaces in input */
+    while (input[i] == ' ')
+        i++;
+    /* Handle 'exit' command */
+    if (strcmp(&input[i], "exit") == 0)
+    {
+        free(input);
+        exit(0);
+    }
+    /* Handle 'env' command */
+    if (strcmp(&input[i], "env") == 0)
+    {
+        handle_env();
+        return;
+    }
+    /* Split input into command and arguments */
+    token = strtok(&input[i], " ");
+    i = 0;
+    while (token && i < 63)  /* Leave room for NULL terminator */
+    {
+        args[i] = token;
+        token = strtok(NULL, " ");
+        i++;
+    }
+    args[i] = NULL;  /* NULL terminate argument array */
+    /* Execute the command using path.c functionality */
+    if (args[0] == NULL || args[0][0] == '\0')
+    {
+    return;
+    }
+    execute_builtin(args[0], args);
 }
 
 /**
@@ -149,8 +126,8 @@ void execute_command(char *input)
  */
 void handle_env(void)
 {
-	char **env;
+    char **env;
 
-	for (env = environ; *env != NULL; env++)
-		printf("%s\n", *env);
+    for (env = environ; *env != NULL; env++)
+        printf("%s\n", *env);
 }

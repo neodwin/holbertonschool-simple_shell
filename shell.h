@@ -29,7 +29,7 @@ char *find_path_in_environ(void);
 char *check_current_path(char *command);
 char *try_path(char *dir, char *command);
 char *get_command_path(char *command);
-int execute_builtin(char *command, char **args);
+void execute_builtin(char *command, char **args);
 
 /*
  * Main Functions - Core shell operations
