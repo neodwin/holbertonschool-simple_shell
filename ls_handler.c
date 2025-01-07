@@ -8,7 +8,25 @@
  */
 int is_ls_command(const char *command)
 {
-	return (strcmp(command, "ls") == 0 || strstr(command, "/ls") != NULL);
+	const char *cmd = command;
+
+	/* Skip leading spaces */
+	while (*cmd == ' ' || *cmd == '\t')
+		cmd++;
+
+	/* Check for "ls" or path ending with "/ls" */
+	if (strcmp(cmd, "ls") == 0)
+		return (1);
+
+	if (strstr(cmd, "/ls") != NULL)
+	{
+		const char *slash_ls = strstr(cmd, "/ls");
+		if (*(slash_ls + 3) == '\0' || *(slash_ls + 3) == ' ' ||
+			*(slash_ls + 3) == '\t')
+			return (1);
+	}
+
+	return (0);
 }
 
 /**
@@ -21,23 +39,28 @@ char *handle_ls_path(const char *command)
 {
 	char *ls_path;
 	struct stat st;
+	const char *cmd = command;
+
+	/* Skip leading spaces */
+	while (*cmd == ' ' || *cmd == '\t')
+		cmd++;
 
 	/* If it's a full path to ls */
-	if (strchr(command, '/'))
+	if (strchr(cmd, '/'))
 	{
-		if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
-			return (strdup(command));
+		if (stat(cmd, &st) == 0 && (st.st_mode & S_IXUSR))
+			return (strdup(cmd));
 		return (NULL);
 	}
 
-	/* Try /bin/ls first */
+	/* Always try /bin/ls first */
+	if (stat("/bin/ls", &st) == 0 && (st.st_mode & S_IXUSR))
+		return (strdup("/bin/ls"));
+
+	/* If /bin/ls doesn't work, try PATH */
 	ls_path = try_path("/bin", "ls");
 	if (ls_path)
 		return (ls_path);
-
-	/* If PATH is empty or not found, still try /bin/ls */
-	if (stat("/bin/ls", &st) == 0 && (st.st_mode & S_IXUSR))
-		return (strdup("/bin/ls"));
 
 	return (NULL);
 }

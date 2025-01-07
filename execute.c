@@ -57,8 +57,16 @@ int parse_command(char *line, char **args)
 {
 	char *token;
 	int i = 0;
+	char *line_copy = strdup(line);
 
-	token = strtok(line, " \t");
+	if (!line_copy)
+		return (0);
+
+	/* Skip leading spaces */
+	while (*line_copy == ' ' || *line_copy == '\t')
+		line_copy++;
+
+	token = strtok(line_copy, " \t");
 	while (token && i < 63)
 	{
 		args[i] = token;
@@ -66,6 +74,12 @@ int parse_command(char *line, char **args)
 		i++;
 	}
 	args[i] = NULL;
+
+	/* Copy arguments back to original line */
+	for (i = 0; args[i]; i++)
+		args[i] = line + (args[i] - line_copy);
+
+	free(line_copy);
 	return (i);
 }
 
@@ -109,20 +123,21 @@ int execute_command(char *input)
 	line = input_copy;
 	while (line && *line)
 	{
+		/* Skip empty lines */
+		while (*line == '\n' || *line == ' ' || *line == '\t')
+			line++;
+
+		if (!*line)
+			break;
+
 		next_line = find_newline(line);
 		if (next_line)
 			*next_line = '\0';
 
-		while (*line == ' ' || *line == '\t')
-			line++;
-
-		if (*line)
+		if (*line && !process_builtin(line))
 		{
-			if (!process_builtin(line))
-			{
-				if (parse_command(line, args) > 0 && args[0][0] != '\0')
-					status = execute_builtin(args[0], args);
-			}
+			if (parse_command(line, args) > 0 && args[0][0] != '\0')
+				status = execute_builtin(args[0], args);
 		}
 
 		if (next_line)
