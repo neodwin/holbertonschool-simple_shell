@@ -1,6 +1,23 @@
 #include "shell.h"
 
 /**
+ * is_empty_line - Check if a line is empty or contains only whitespace
+ * @line: Line to check
+ *
+ * Return: 1 if line is empty, 0 otherwise
+ */
+int is_empty_line(const char *line)
+{
+	while (*line)
+	{
+		if (*line != ' ' && *line != '\t' && *line != '\n')
+			return (0);
+		line++;
+	}
+	return (1);
+}
+
+/**
  * parse_args - Helper function to parse arguments
  * @line_copy: Copy of input line
  * @args: Array to store arguments
@@ -14,6 +31,9 @@ int parse_args(char *line_copy, char **args, char *line)
 	int i = 0;
 	char *start = line_copy;
 	size_t offset;
+
+	if (is_empty_line(line_copy))
+		return (0);
 
 	/* Skip leading spaces */
 	while (*start == ' ' || *start == '\t')

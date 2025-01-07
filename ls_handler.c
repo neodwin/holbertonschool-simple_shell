@@ -84,12 +84,17 @@ int execute_ls(char *command, char **shell_args)
 	int arg_count;
 	pid_t pid;
 	int status;
+	char *cmd_start = command;
 
-	ls_path = handle_ls_path(command);
+	/* Skip leading spaces */
+	while (*cmd_start == ' ' || *cmd_start == '\t')
+		cmd_start++;
+
+	ls_path = handle_ls_path(cmd_start);
 	if (!ls_path)
 		return (1);
 
-	arg_count = setup_ls_args(command, ls_args);
+	arg_count = setup_ls_args(cmd_start, ls_args);
 	if (arg_count == 0)
 	{
 		free(ls_path);

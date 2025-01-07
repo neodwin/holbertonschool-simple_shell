@@ -123,15 +123,36 @@ int execute_command(char *input, char *program_name)
 	char *next_line;
 	int status = 0;
 	char *args[64];
+	char *trimmed_line;
+	char *current_line;
 
 	line = input;
-	while (line)
+	while (line && *line)
 	{
 		next_line = find_newline(line);
 		if (next_line)
+		{
 			*next_line = '\0';
+			current_line = strdup(line);
+			if (!current_line)
+				return (1);
+		}
+		else
+		{
+			current_line = strdup(line);
+			if (!current_line)
+				return (1);
+		}
 
-		status = process_single_command(line, args, program_name);
+		/* Skip empty lines */
+		trimmed_line = current_line;
+		while (*trimmed_line == ' ' || *trimmed_line == '\t')
+			trimmed_line++;
+
+		if (*trimmed_line)  /* Only process non-empty lines */
+			status = process_single_command(current_line, args, program_name);
+
+		free(current_line);
 
 		if (next_line)
 			line = next_line + 1;
