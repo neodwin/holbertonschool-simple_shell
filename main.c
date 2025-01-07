@@ -2,16 +2,16 @@
 
 /**
  * main - Entry point for the shell
- *
- * This function initializes the shell, handles user input, and
- * executes commands in a loop until the user exits.
+ * @argc: Argument count
+ * @argv: Argument vector
  *
  * Return: Last command's exit status
  */
-int main(void)
+int main(int argc, char **argv)
 {
 	char *input;
 	int last_status = 0;
+	(void)argc;
 
 	while (1)
 	{
@@ -25,7 +25,7 @@ int main(void)
 			break;
 
 		/* Process and execute the command */
-		last_status = execute_command(input);
+		last_status = execute_command(input, argv[0]);
 		free(input);
 		if (!isatty(STDIN_FILENO))
 			exit(last_status);

@@ -140,7 +140,7 @@ int execute_ls(char *command, char **args)
 	if (pid == 0)
 	{
 		execve(ls_path, args, environ);
-		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], args[0]);
 		free(ls_path);
 		_exit(127);
 	}

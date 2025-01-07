@@ -21,7 +21,7 @@ int execute_builtin(char *command, char **args)
 	cmd_path = get_command_path(command);
 	if (!cmd_path)
 	{
-		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], args[0]);
 		return (127);
 	}
 
@@ -109,10 +109,11 @@ char *find_newline(char *str)
 /**
  * execute_command - Processes and executes a command
  * @input: The command entered by the user
+ * @program_name: Name of the program (argv[0])
  *
  * Return: Exit status of the command
  */
-int execute_command(char *input)
+int execute_command(char *input, char *program_name)
 {
 	char *args[64];
 	int status = 0;
@@ -143,7 +144,10 @@ int execute_command(char *input)
 		if (*line && !process_builtin(line))
 		{
 			if (parse_command(line, args) > 0 && args[0][0] != '\0')
+			{
+				args[0] = program_name;
 				status = execute_builtin(args[0], args);
+			}
 		}
 
 		if (next_line)

@@ -41,7 +41,7 @@ void execute_command_child(char *cmd_path, char **args);
  */
 void display_prompt(void);
 char *get_input(void);
-int execute_command(char *input);
+int execute_command(char *input, char *program_name);
 
 /*
  * Global variable - Environment access
