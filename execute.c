@@ -18,6 +18,31 @@ void execute_in_child(char *cmd_path, char **args, char *program_name)
 }
 
 /**
+ * parse_command - Parse command into arguments
+ * @command: Command string to parse
+ * Return: Array of arguments
+ */
+char **parse_command(char *command)
+{
+	char **args = malloc(sizeof(char *) * 32);
+	char *token;
+	int i = 0;
+
+	if (!args)
+		return (NULL);
+
+	token = strtok(command, " \t\n");
+	while (token && i < 31)
+	{
+		args[i] = token;
+		i++;
+		token = strtok(NULL, " \t\n");
+	}
+	args[i] = NULL;
+	return (args);
+}
+
+/**
  * execute_command - Execute a command
  * @command: Command to execute
  * @program_name: Name of the shell program
@@ -26,7 +51,7 @@ void execute_command(char *command, char *program_name)
 {
 	pid_t pid;
 	int status;
-	char *args[2];
+	char **args;
 	char *cmd_path;
 
 	/* Remove leading/trailing whitespace */
@@ -36,13 +61,15 @@ void execute_command(char *command, char *program_name)
 	if (*command == '\0')
 		return;
 
-	args[0] = command;
-	args[1] = NULL;
+	args = parse_command(command);
+	if (!args)
+		return;
 
-	cmd_path = get_path(command);
+	cmd_path = get_path(args[0]);
 	if (!cmd_path)
 	{
 		fprintf(stderr, "%s: No such file or directory\n", program_name);
+		free(args);
 		return;
 	}
 
@@ -51,6 +78,7 @@ void execute_command(char *command, char *program_name)
 	{
 		perror("fork");
 		free(cmd_path);
+		free(args);
 		return;
 	}
 
@@ -60,6 +88,7 @@ void execute_command(char *command, char *program_name)
 	{
 		waitpid(pid, &status, 0);
 		free(cmd_path);
+		free(args);
 	}
 }
 
