@@ -23,6 +23,13 @@ char *get_command_path(char *command);
 int execute_builtin(char *command, char **args);
 
 /*
+ * Prototypes - Functions for ls command handling
+ */
+int is_ls_command(const char *command);
+char *handle_ls_path(const char *command);
+int execute_ls(char *command, char **args);
+
+/*
  * Prototypes - Functions for builtin commands
  */
 void handle_env(void);

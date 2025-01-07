@@ -12,22 +12,10 @@ int execute_builtin(char *command, char **args)
 	pid_t pid;
 	char *cmd_path;
 	int status = 0;
-	struct stat st;
 
-	/* Check if command exists before trying to execute */
-	if (command[0] != '/' && command[0] != '.')
-	{
-		if (stat(command, &st) != 0)
-		{
-			cmd_path = try_path("/bin", command);
-			if (!cmd_path)
-			{
-				fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
-				return (127);
-			}
-			free(cmd_path);
-		}
-	}
+	/* Handle ls command specially */
+	if (is_ls_command(command))
+		return (execute_ls(command, args));
 
 	/* Get full path of command */
 	cmd_path = get_command_path(command);
