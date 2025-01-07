@@ -1,51 +1,6 @@
 #include "shell.h"
 
 /**
- * resolve_dots - Resolve dots in path
- * @path: Path to resolve
- *
- * Return: Resolved path (must be freed) or NULL
- */
-char *resolve_dots(const char *path)
-{
-	char *resolved = strdup(path);
-	char *token;
-	char *result;
-	int len = 0;
-
-	if (!resolved)
-		return (NULL);
-
-	result = malloc(strlen(path) + 1);
-	if (!result)
-	{
-		free(resolved);
-		return (NULL);
-	}
-	result[0] = '\0';
-
-	token = strtok(resolved, "/");
-	while (token)
-	{
-		if (strcmp(token, ".") == 0)
-			;
-		else if (strcmp(token, "..") == 0)
-			len = strlen(result) - 1;
-		else
-		{
-			if (len > 0)
-				strcat(result, "/");
-			strcat(result, token);
-			len = strlen(result);
-		}
-		token = strtok(NULL, "/");
-	}
-
-	free(resolved);
-	return (result);
-}
-
-/**
  * execute_builtin - Execute a command with its arguments
  * @command: The command to execute
  * @args: Array of command and its arguments
@@ -54,56 +9,21 @@ char *resolve_dots(const char *path)
  */
 int execute_builtin(char *command, char **args)
 {
-	pid_t pid;
 	char *cmd_path;
-	int status = 0;
-	struct stat st;
 
 	/* Handle ls command specially */
 	if (is_ls_command(command))
 		return (execute_ls(command, args));
 
-	/* Try direct path first */
-	if (command[0] == '/')
-		cmd_path = strdup(command);
-	else if (command[0] == '.')
-		cmd_path = resolve_dots(command);
-	else
-		cmd_path = get_command_path(command);
-
+	/* Get command path with extended checks */
+	cmd_path = get_command_path_ext(command);
 	if (!cmd_path)
 	{
 		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
 		return (127);
 	}
 
-	/* Check if file exists and is executable */
-	if (stat(cmd_path, &st) != 0 || !(st.st_mode & S_IXUSR))
-	{
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
-		free(cmd_path);
-		return (127);
-	}
-
-	/* Create new process only if command exists */
-	pid = fork();
-	if (pid == -1)
-	{
-		free(cmd_path);
-		perror("fork");
-		return (1);
-	}
-
-	if (pid == 0)
-		execute_command_child(cmd_path, args);
-	else
-	{
-		waitpid(pid, &status, 0);
-		free(cmd_path);
-		if (WIFEXITED(status))
-			return (WEXITSTATUS(status));
-	}
-	return (status);
+	return (execute_command_ext(cmd_path, args));
 }
 
 /**

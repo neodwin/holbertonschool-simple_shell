@@ -10,6 +10,7 @@
 char *normalize_path(const char *path)
 {
 	char *norm_path = strdup(path);
+
 	if (!norm_path)
 		return (NULL);
 	return (norm_path);

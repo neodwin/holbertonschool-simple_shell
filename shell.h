@@ -45,6 +45,13 @@ char *find_newline(char *str);
 int process_single_command(char *line, char **args, char *program_name);
 
 /*
+ * Prototypes - Functions for command utilities
+ */
+char *resolve_dots(const char *path);
+char *get_command_path_ext(const char *command);
+int execute_command_ext(char *cmd_path, char **args);
+
+/*
  * Prototypes - Core shell operations
  */
 void display_prompt(void);
