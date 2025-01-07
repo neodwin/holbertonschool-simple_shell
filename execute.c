@@ -58,17 +58,44 @@ int process_single_command(char *line, char **args, char *program_name)
 {
 	int status = 0;
 	char *original_command;
+	char **original_args = NULL;
+	int i;
+
+	(void)program_name;  /* Suppress unused parameter warning */
 
 	if (*line && !process_builtin(line))
 	{
 		if (parse_command(line, args) > 0 && args[0][0] != '\0')
 		{
+			/* Save original command */
 			original_command = strdup(args[0]);
 			if (!original_command)
 				return (1);
-			args[0] = program_name;
-			status = execute_builtin(original_command, args);
+
+			/* Count arguments */
+			for (i = 0; args[i]; i++)
+				;
+
+			/* Allocate space for original arguments */
+			original_args = malloc(sizeof(char *) * (i + 1));
+			if (!original_args)
+			{
+				free(original_command);
+				return (1);
+			}
+
+			/* Copy all arguments */
+			original_args[0] = original_command;
+			for (i = 1; args[i]; i++)
+				original_args[i] = args[i];
+			original_args[i] = NULL;
+
+			/* Execute with original command and arguments */
+			status = execute_builtin(original_command, original_args);
+
+			/* Cleanup */
 			free(original_command);
+			free(original_args);
 		}
 	}
 	return (status);

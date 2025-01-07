@@ -127,7 +127,7 @@ int execute_ls(char *command, char **args)
 	ls_path = handle_ls_path(command);
 	if (!ls_path)
 	{
-		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
 		return (127);
 	}
 
@@ -141,8 +141,9 @@ int execute_ls(char *command, char **args)
 
 	if (pid == 0)
 	{
+		args[0] = ls_path;  /* Replace first argument with full path */
 		execve(ls_path, args, environ);
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], args[0]);
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
 		free(ls_path);
 		_exit(127);
 	}
