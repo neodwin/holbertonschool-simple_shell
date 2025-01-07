@@ -24,6 +24,26 @@ char *try_path(const char *dir, const char *command)
 }
 
 /**
+ * find_path_in_env - Find PATH in environment variables
+ * Return: PATH value or NULL if not found
+ */
+char *find_path_in_env(void)
+{
+	int i;
+	char *path = NULL;
+
+	for (i = 0; environ[i]; i++)
+	{
+		if (strncmp(environ[i], "PATH=", 5) == 0)
+		{
+			path = environ[i] + 5;
+			return (path);
+		}
+	}
+	return ("/bin:/usr/bin"); /* Default PATH */
+}
+
+/**
  * get_path - Get the full path of a command
  * @command: Command to find
  * Return: Full path of command if found, NULL otherwise
@@ -43,7 +63,7 @@ char *get_path(char *command)
 		return (NULL);
 	}
 
-	path_env = getenv("PATH");
+	path_env = find_path_in_env();
 	if (!path_env)
 		return (NULL);
 
