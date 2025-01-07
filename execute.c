@@ -21,7 +21,7 @@ int execute_builtin(char *command, char **args)
 	cmd_path = get_command_path(command);
 	if (!cmd_path)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
 		return (127);
 	}
 
@@ -29,9 +29,9 @@ int execute_builtin(char *command, char **args)
 	pid = fork();
 	if (pid == -1)
 	{
-		free(cmd_path);
-		perror("fork");
-		return (1);
+			free(cmd_path);
+			perror("fork");
+			return (1);
 	}
 
 	if (pid == 0)
@@ -58,13 +58,19 @@ int parse_command(char *line, char **args)
 	char *token;
 	int i = 0;
 	char *line_copy = strdup(line);
+	char *start;
 
 	if (!line_copy)
 		return (0);
 
 	/* Skip leading spaces */
-	while (*line_copy == ' ' || *line_copy == '\t')
-		line_copy++;
+	start = line_copy;
+	while (*start == ' ' || *start == '\t')
+		start++;
+
+	/* Copy cleaned start back to line_copy */
+	if (start != line_copy)
+		memmove(line_copy, start, strlen(start) + 1);
 
 	token = strtok(line_copy, " \t");
 	while (token && i < 63)

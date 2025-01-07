@@ -1,4 +1,37 @@
 #include "shell.h"
+#include <limits.h>
+
+/**
+ * normalize_path - Normalize a path by resolving ./ and ../
+ * @path: Path to normalize
+ *
+ * Return: Normalized path (must be freed) or NULL on error
+ */
+char *normalize_path(const char *path)
+{
+	char resolved[PATH_MAX];
+	char *norm_path = NULL;
+	char *pwd = getcwd(NULL, 0);
+	
+	if (!pwd)
+		return (NULL);
+
+	if (realpath(path, resolved))
+	{
+		norm_path = strdup(resolved);
+	}
+	else
+	{
+		/* Try to resolve relative to current directory */
+		char full_path[PATH_MAX];
+		snprintf(full_path, sizeof(full_path), "%s/%s", pwd, path);
+		if (realpath(full_path, resolved))
+			norm_path = strdup(resolved);
+	}
+
+	free(pwd);
+	return (norm_path);
+}
 
 /**
  * is_ls_command - Check if command is ls
@@ -9,24 +42,29 @@
 int is_ls_command(const char *command)
 {
 	const char *cmd = command;
+	char *norm_path;
+	int result = 0;
 
 	/* Skip leading spaces */
 	while (*cmd == ' ' || *cmd == '\t')
 		cmd++;
 
-	/* Check for "ls" or path ending with "/ls" */
+	/* Check for simple "ls" command */
 	if (strcmp(cmd, "ls") == 0)
 		return (1);
 
-	if (strstr(cmd, "/ls") != NULL)
+	/* Try to normalize the path */
+	norm_path = normalize_path(cmd);
+	if (norm_path)
 	{
-		const char *slash_ls = strstr(cmd, "/ls");
-		if (*(slash_ls + 3) == '\0' || *(slash_ls + 3) == ' ' ||
-			*(slash_ls + 3) == '\t')
-			return (1);
+		/* Check if normalized path ends with "/ls" */
+		size_t len = strlen(norm_path);
+		if (len >= 3 && strcmp(norm_path + len - 3, "/ls") == 0)
+			result = 1;
+		free(norm_path);
 	}
 
-	return (0);
+	return (result);
 }
 
 /**
@@ -40,16 +78,22 @@ char *handle_ls_path(const char *command)
 	char *ls_path;
 	struct stat st;
 	const char *cmd = command;
+	char *norm_path;
 
 	/* Skip leading spaces */
 	while (*cmd == ' ' || *cmd == '\t')
 		cmd++;
 
-	/* If it's a full path to ls */
+	/* If it's a path (contains slashes), try to normalize it */
 	if (strchr(cmd, '/'))
 	{
-		if (stat(cmd, &st) == 0 && (st.st_mode & S_IXUSR))
-			return (strdup(cmd));
+		norm_path = normalize_path(cmd);
+		if (norm_path)
+		{
+			if (stat(norm_path, &st) == 0 && (st.st_mode & S_IXUSR))
+				return (norm_path);
+			free(norm_path);
+		}
 		return (NULL);
 	}
 
@@ -81,7 +125,7 @@ int execute_ls(char *command, char **args)
 	ls_path = handle_ls_path(command);
 	if (!ls_path)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
 		return (127);
 	}
 
@@ -96,7 +140,7 @@ int execute_ls(char *command, char **args)
 	if (pid == 0)
 	{
 		execve(ls_path, args, environ);
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+		fprintf(stderr, "./hsh: 1: %s: not found\n", command);
 		free(ls_path);
 		_exit(127);
 	}
