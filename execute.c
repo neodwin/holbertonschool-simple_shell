@@ -10,13 +10,45 @@
 int execute_builtin(char *command, char **args)
 {
 	char *cmd_path;
+	char *clean_command;
+	size_t i, j;
+	char *first_space;
+
+	/* Remove trailing spaces from command */
+	clean_command = strdup(command);
+	if (!clean_command)
+		return (127);
+
+	/* Find first space to separate command from arguments */
+	first_space = strchr(clean_command, ' ');
+	if (first_space)
+		*first_space = '\0';
+
+	i = strlen(clean_command);
+	while (i > 0 && (clean_command[i - 1] == ' ' || clean_command[i - 1] == '\t'))
+		i--;
+	clean_command[i] = '\0';
+
+	/* Remove leading spaces */
+	j = 0;
+	while (clean_command[j] == ' ' || clean_command[j] == '\t')
+		j++;
+
+	if (j > 0)
+		memmove(clean_command, clean_command + j, strlen(clean_command + j) + 1);
 
 	/* Handle ls command specially */
-	if (is_ls_command(command))
-		return (execute_ls(command, args));
+	if (is_ls_command(clean_command))
+	{
+		i = execute_ls(command, args);
+		free(clean_command);
+		return (i);
+	}
 
 	/* Get command path with extended checks */
-	cmd_path = get_command_path_ext(command);
+	cmd_path = get_command_path_ext(clean_command);
+	free(clean_command);
+
 	if (!cmd_path)
 	{
 		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
@@ -38,18 +70,24 @@ int process_single_command(char *line, char **args, char *program_name)
 {
 	int status = 0;
 	char *original_command;
+	char *original_args[64];
+	int i;
 
 	if (*line && !process_builtin(line))
 	{
-		if (parse_command(line, args) > 0 && args[0][0] != '\0')
+		if (parse_command(line, original_args) > 0 && original_args[0][0] != '\0')
 		{
-			original_command = strdup(args[0]);
+			original_command = strdup(line);
 			if (!original_command)
 				return (1);
 
+			/* Copy arguments */
 			args[0] = program_name;
-			status = execute_builtin(original_command, args);
+			for (i = 0; original_args[i]; i++)
+				args[i + 1] = original_args[i];
+			args[i + 1] = NULL;
 
+			status = execute_builtin(original_command, args);
 			free(original_command);
 		}
 	}

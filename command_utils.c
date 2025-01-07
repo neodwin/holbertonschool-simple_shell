@@ -86,23 +86,50 @@ int execute_command_ext(char *cmd_path, char **args)
 {
 	pid_t pid;
 	int status = 0;
+	char **exec_args;
+	int i, arg_count;
+
+	/* Count arguments */
+	for (arg_count = 1; args[arg_count]; arg_count++)
+		;
+
+	/* Create new argument array */
+	exec_args = malloc(sizeof(char *) * (arg_count + 1));
+	if (!exec_args)
+	{
+		free(cmd_path);
+		return (1);
+	}
+
+	/* Set up arguments */
+	exec_args[0] = cmd_path;
+	for (i = 2; i < arg_count; i++)
+		exec_args[i - 1] = args[i];
+	exec_args[arg_count - 1] = NULL;
 
 	pid = fork();
 	if (pid == -1)
 	{
 		free(cmd_path);
+		free(exec_args);
 		perror("fork");
 		return (1);
 	}
 
 	if (pid == 0)
-		execute_command_child(cmd_path, args);
-	else
 	{
-		waitpid(pid, &status, 0);
+		execve(cmd_path, exec_args, environ);
+		perror("execve");
 		free(cmd_path);
-		if (WIFEXITED(status))
-			return (WEXITSTATUS(status));
+		free(exec_args);
+		_exit(127);
 	}
+
+	waitpid(pid, &status, 0);
+	free(cmd_path);
+	free(exec_args);
+	if (WIFEXITED(status))
+		return (WEXITSTATUS(status));
+
 	return (status);
 }

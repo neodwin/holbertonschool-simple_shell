@@ -23,18 +23,27 @@ int parse_args(char *line_copy, char **args, char *line)
 	if (start != line_copy)
 		memmove(line_copy, start, strlen(start) + 1);
 
+	/* Remove trailing spaces */
+	start = line_copy + strlen(line_copy) - 1;
+	while (start > line_copy && (*start == ' ' || *start == '\t' || *start == '\n'))
+		*start-- = '\0';
+
+	/* Split command and arguments */
 	token = strtok(line_copy, " \t");
-	while (token && i < 63)
+	if (token)
 	{
-		/* Skip empty tokens */
-		if (*token)
+		offset = token - line_copy;
+		args[i++] = line + offset;
+
+		/* Parse remaining arguments */
+		while ((token = strtok(NULL, " \t")) && i < 63)
 		{
-			/* Calculate offset in original string */
-			offset = token - line_copy;
-			args[i] = line + offset;
-			i++;
+			if (*token)
+			{
+				offset = token - line_copy;
+				args[i++] = line + offset;
+			}
 		}
-		token = strtok(NULL, " \t");
 	}
 	args[i] = NULL;
 

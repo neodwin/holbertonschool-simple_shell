@@ -83,32 +83,56 @@ int execute_ls(char *command, char **args)
 	pid_t pid;
 	char *ls_path;
 	int status = 0;
+	char **exec_args;
+	int i, arg_count;
 
-	ls_path = strdup(command);
+	/* Get the ls command path */
+	ls_path = handle_ls_path("/bin/ls");
 	if (!ls_path)
 	{
 		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
 		return (127);
 	}
 
+	/* Count arguments */
+	for (arg_count = 1; args[arg_count]; arg_count++)
+		;
+
+	/* Create new argument array */
+	exec_args = malloc(sizeof(char *) * (arg_count + 1));
+	if (!exec_args)
+	{
+		free(ls_path);
+		return (1);
+	}
+
+	/* Set up arguments */
+	exec_args[0] = ls_path;
+	for (i = 2; i < arg_count; i++)
+		exec_args[i - 1] = args[i];
+	exec_args[arg_count - 1] = NULL;
+
 	pid = fork();
 	if (pid == -1)
 	{
 		free(ls_path);
+		free(exec_args);
 		perror("fork");
 		return (1);
 	}
 
 	if (pid == 0)
 	{
-		execve(ls_path, args, environ);
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], ls_path);
+		execve(ls_path, exec_args, environ);
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
 		free(ls_path);
+		free(exec_args);
 		_exit(127);
 	}
 
 	waitpid(pid, &status, 0);
 	free(ls_path);
+	free(exec_args);
 	if (WIFEXITED(status))
 		return (WEXITSTATUS(status));
 
