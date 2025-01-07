@@ -1,4 +1,4 @@
-.TH HSH 1 "December 2023" "1.0" "Simple Shell Manual"
+.TH HSH 1 "January 2024" "1.0" "Simple Shell Manual"
 
 .SH NAME
 hsh \- simple UNIX command interpreter
@@ -8,7 +8,7 @@ hsh \- simple UNIX command interpreter
 
 .SH DESCRIPTION
 .B hsh
-is a simple UNIX command line interpreter. It reads commands from standard input and executes them.
+is a simple UNIX command line interpreter. It reads commands from standard input and executes them. The shell can handle both interactive and non-interactive modes, supports command execution with arguments, and properly manages paths and whitespace.
 
 .SH FEATURES
 .IP \[bu]
@@ -16,17 +16,43 @@ Executes commands with arguments
 .IP \[bu]
 Handles the PATH environment variable
 .IP \[bu]
-Implements built-in commands: exit, env
+Implements built-in command: exit
 .IP \[bu]
 Supports both interactive and non-interactive mode
+.IP \[bu]
+Handles absolute and relative paths
+.IP \[bu]
+Manages leading and trailing whitespace
+.IP \[bu]
+Works with or without environment variables
+.IP \[bu]
+Proper error handling for non-existent commands
 
 .SH BUILT-IN COMMANDS
 .TP
 .B exit
 Exits the shell
+
+.SH COMMAND EXECUTION
+The shell supports various command formats:
 .TP
-.B env
-Prints the current environment
+.B Basic commands:
+ls, pwd, etc.
+.TP
+.B Commands with arguments:
+ls -l, ls /var
+.TP
+.B Absolute paths:
+/bin/ls, /usr/bin/pwd
+.TP
+.B Relative paths:
+./program, ../directory/program
+.TP
+.B Commands with whitespace:
+    ls    ,    ls -l    
+
+.SH ENVIRONMENT
+The shell can operate with or without environment variables. When environment variables are removed (using env -i), the shell continues to function properly for commands with absolute paths.
 
 .SH EXAMPLES
 .TP
@@ -36,8 +62,18 @@ Basic command:
 Command with arguments:
 .B $ ls -l
 .TP
-Using PATH:
+Absolute path:
+.B $ /bin/ls
+.TP
+Command with whitespace:
+.B $     ls     
+.TP
+Multiple commands:
+.B $ ls
 .B $ pwd
+.TP
+Without environment:
+.B $ env -i ./hsh
 
 .SH EXIT STATUS
 .TP
