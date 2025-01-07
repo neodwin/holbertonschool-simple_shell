@@ -25,7 +25,8 @@ int parse_args(char *line_copy, char **args, char *line)
 
 	/* Remove trailing spaces */
 	start = line_copy + strlen(line_copy) - 1;
-	while (start > line_copy && (*start == ' ' || *start == '\t' || *start == '\n'))
+	while (start > line_copy && (*start == ' ' || *start == '\t' ||
+		*start == '\n'))
 		*start-- = '\0';
 
 	/* Split command and arguments */
@@ -60,14 +61,32 @@ int parse_args(char *line_copy, char **args, char *line)
 int parse_command(char *line, char **args)
 {
 	char *line_copy = strdup(line);
-	int result;
+	char *token;
+	int i = 0;
 
 	if (!line_copy)
 		return (0);
 
-	result = parse_args(line_copy, args, line);
-	free(line_copy);
-	return (result);
+	/* Skip leading spaces */
+	while (*line_copy == ' ' || *line_copy == '\t')
+		line_copy++;
+
+	/* Remove trailing newline and spaces */
+	token = line_copy + strlen(line_copy) - 1;
+	while (token > line_copy && (*token == ' ' || *token == '\t' ||
+		*token == '\n'))
+		*token-- = '\0';
+
+	/* Parse command and arguments */
+	token = strtok(line_copy, " \t");
+	while (token && i < 63)
+	{
+		args[i++] = token;
+		token = strtok(NULL, " \t");
+	}
+	args[i] = NULL;
+
+	return (i);
 }
 
 /**

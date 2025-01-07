@@ -1,130 +1,110 @@
 #include "shell.h"
 
 /**
- * execute_builtin - Execute a command with its arguments
- * @command: The command to execute
- * @args: Array of command and its arguments
+ * handle_command_error - Handle command execution error
+ * @program_name: Name of the program
+ * @command: Command that failed
+ */
+void handle_command_error(const char *program_name, const char *command)
+{
+	fprintf(stderr, "%s: 1: %s: not found\n", program_name, command);
+}
+
+/**
+ * execute_builtin - Execute builtin command
+ * @command: Command to execute
+ * @args: Command arguments
  *
- * Return: Exit status of the command (127 if not found, 0 on success)
+ * Return: 0 on success, 1 on failure
  */
 int execute_builtin(char *command, char **args)
 {
 	char *cmd_path;
-	char *clean_command;
-	size_t i, j;
-	char *first_space;
+	int status;
 
-	/* Remove trailing spaces from command */
-	clean_command = strdup(command);
-	if (!clean_command)
-		return (127);
+	if (is_ls_command(command))
+		return (execute_ls(command, args));
 
-	/* Find first space to separate command from arguments */
-	first_space = strchr(clean_command, ' ');
-	if (first_space)
-		*first_space = '\0';
-
-	i = strlen(clean_command);
-	while (i > 0 && (clean_command[i - 1] == ' ' || clean_command[i - 1] == '\t'))
-		i--;
-	clean_command[i] = '\0';
-
-	/* Remove leading spaces */
-	j = 0;
-	while (clean_command[j] == ' ' || clean_command[j] == '\t')
-		j++;
-
-	if (j > 0)
-		memmove(clean_command, clean_command + j, strlen(clean_command + j) + 1);
-
-	/* Handle ls command specially */
-	if (is_ls_command(clean_command))
-	{
-		i = execute_ls(command, args);
-		free(clean_command);
-		return (i);
-	}
-
-	/* Get command path with extended checks */
-	cmd_path = get_command_path_ext(clean_command);
-	free(clean_command);
-
+	cmd_path = get_command_path_ext(command);
 	if (!cmd_path)
-	{
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
-		return (127);
-	}
+		return (1);
 
-	return (execute_command_ext(cmd_path, args));
-}
-
-/**
- * process_single_command - Process and execute a single command
- * @line: Command line to process
- * @args: Array to store arguments
- * @program_name: Name of the program
- *
- * Return: Status of command execution
- */
-int process_single_command(char *line, char **args, char *program_name)
-{
-	int status = 0;
-	char *original_command;
-	char *original_args[64];
-	int i;
-
-	if (*line && !process_builtin(line))
-	{
-		if (parse_command(line, original_args) > 0 && original_args[0][0] != '\0')
-		{
-			original_command = strdup(line);
-			if (!original_command)
-				return (1);
-
-			/* Copy arguments */
-			args[0] = program_name;
-			for (i = 0; original_args[i]; i++)
-				args[i + 1] = original_args[i];
-			args[i + 1] = NULL;
-
-			status = execute_builtin(original_command, args);
-			free(original_command);
-		}
-	}
+	status = execute_command_ext(cmd_path, args);
 	return (status);
 }
 
 /**
- * execute_command - Processes and executes a command
- * @input: The command entered by the user
- * @program_name: Name of the program (argv[0])
+ * prepare_command - Prepare command for execution
+ * @line: Input line
+ * @args: Array to store arguments
+ * @program_name: Name of the program
  *
- * Return: Exit status of the command
+ * Return: Number of arguments or -1 on failure
+ */
+int prepare_command(char *line, char **args, char *program_name)
+{
+	char *line_copy = strdup(line);
+	int arg_count;
+
+	if (!line_copy)
+		return (-1);
+
+	arg_count = parse_args(line_copy, args, line);
+	if (arg_count == 0)
+	{
+		free(line_copy);
+		return (-1);
+	}
+
+	args[0] = program_name;
+	free(line_copy);
+	return (arg_count);
+}
+
+/**
+ * process_single_command - Process a single command
+ * @line: Command line to process
+ * @args: Array to store arguments
+ * @program_name: Name of the program
+ *
+ * Return: Command execution status
+ */
+int process_single_command(char *line, char **args, char *program_name)
+{
+	int arg_count;
+	int status;
+
+	arg_count = prepare_command(line, args, program_name);
+	if (arg_count == -1)
+		return (0);
+
+	if (process_builtin(line))
+		return (0);
+
+	status = execute_builtin(line, args);
+	if (status != 0)
+		handle_command_error(program_name, line);
+
+	return (status);
+}
+
+/**
+ * execute_command - Execute command line
+ * @input: Command line to execute
+ * @program_name: Name of the program
+ *
+ * Return: Command execution status
  */
 int execute_command(char *input, char *program_name)
 {
-	char *args[64];
+	char *line;
+	char *next_line;
 	int status = 0;
-	char *line, *next_line;
-	char *input_copy;
+	char *args[64];
 
-	if (!input)
-		return (0);
-
-	input_copy = strdup(input);
-	if (!input_copy)
-		return (0);
-
-	line = input_copy;
-	while (line && *line)
+	line = input;
+	while (line)
 	{
-		/* Skip empty lines */
-		while (*line == '\n' || *line == ' ' || *line == '\t')
-			line++;
-
-		if (!*line)
-			break;
-
 		next_line = find_newline(line);
 		if (next_line)
 			*next_line = '\0';
@@ -137,7 +117,6 @@ int execute_command(char *input, char *program_name)
 			break;
 	}
 
-	free(input_copy);
 	return (status);
 }
 

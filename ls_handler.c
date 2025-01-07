@@ -1,140 +1,120 @@
 #include "shell.h"
-#include <limits.h>
 
 /**
- * normalize_path - Normalize a path by resolving ./ and ../
- * @path: Path to normalize
+ * handle_ls_path - Get path for ls command
+ * @command: Command string
  *
- * Return: Normalized path (must be freed) or NULL on error
- */
-char *normalize_path(const char *path)
-{
-	char *norm_path = strdup(path);
-
-	if (!norm_path)
-		return (NULL);
-	return (norm_path);
-}
-
-/**
- * is_ls_command - Check if command is ls
- * @command: Command to check
- *
- * Return: 1 if ls command, 0 otherwise
- */
-int is_ls_command(const char *command)
-{
-	const char *cmd = command;
-	size_t len;
-
-	/* Skip leading spaces */
-	while (*cmd == ' ' || *cmd == '\t')
-		cmd++;
-
-	/* Check for simple "ls" command */
-	if (strcmp(cmd, "ls") == 0)
-		return (1);
-
-	/* Check for ls with options or arguments */
-	len = strlen(cmd);
-	if (len >= 2 && strncmp(cmd, "ls", 2) == 0 &&
-		(cmd[2] == ' ' || cmd[2] == '\t' || cmd[2] == '\0'))
-		return (1);
-
-	return (0);
-}
-
-/**
- * handle_ls_path - Handle ls command with PATH variations
- * @command: Command to handle
- *
- * Return: Full path to ls command if found, NULL otherwise
+ * Return: Path to ls executable (must be freed) or NULL
  */
 char *handle_ls_path(const char *command)
 {
-	struct stat st;
-	const char *cmd = command;
+	char path[PATH_MAX];
+	char *normalized;
 
-	/* Skip leading spaces */
-	while (*cmd == ' ' || *cmd == '\t')
-		cmd++;
+	if (!setup_ls_path(path))
+		return (NULL);
 
-	/* Try direct path first */
-	if (stat(cmd, &st) == 0 && (st.st_mode & S_IXUSR))
-		return (strdup(cmd));
+	normalized = normalize_path(path);
+	if (!normalized)
+		return (NULL);
 
-	/* Always try /bin/ls first */
-	if (stat("/bin/ls", &st) == 0 && (st.st_mode & S_IXUSR))
-		return (strdup("/bin/ls"));
-
-	/* If /bin/ls doesn't work, try PATH */
-	return (try_path("/bin", "ls"));
+	return (normalized);
 }
 
 /**
- * execute_ls - Execute ls command with arguments
- * @command: Original command
- * @args: Command arguments
+ * setup_ls_args - Set up arguments for ls command
+ * @command: Original command string
+ * @args: Array to store arguments
  *
- * Return: Exit status of the command
+ * Return: Number of arguments
  */
-int execute_ls(char *command, char **args)
+int setup_ls_args(const char *command, char **args)
 {
-	pid_t pid;
-	char *ls_path;
-	int status = 0;
-	char **exec_args;
-	int i, arg_count;
+	int i = 0;
+	char *token;
+	char *cmd_copy = strdup(command);
 
-	/* Get the ls command path */
-	ls_path = handle_ls_path("/bin/ls");
-	if (!ls_path)
+	if (!cmd_copy)
+		return (0);
+
+	token = strtok(cmd_copy, " \t");
+	while (token && i < 63)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
-		return (127);
+		args[i] = strdup(token);
+		if (!args[i])
+		{
+			while (--i >= 0)
+				free(args[i]);
+			free(cmd_copy);
+			return (0);
+		}
+		i++;
+		token = strtok(NULL, " \t");
 	}
+	args[i] = NULL;
 
-	/* Count arguments */
-	for (arg_count = 1; args[arg_count]; arg_count++)
-		;
+	free(cmd_copy);
+	return (i);
+}
 
-	/* Create new argument array */
-	exec_args = malloc(sizeof(char *) * (arg_count + 1));
-	if (!exec_args)
+/**
+ * cleanup_ls_args - Clean up ls arguments
+ * @args: Array of arguments
+ */
+void cleanup_ls_args(char **args)
+{
+	int i;
+
+	for (i = 0; args[i]; i++)
+		free(args[i]);
+}
+
+/**
+ * execute_ls - Execute ls command
+ * @command: Command string
+ * @shell_args: Shell arguments
+ *
+ * Return: Exit status
+ */
+int execute_ls(char *command, char **shell_args)
+{
+	char *ls_path;
+	char *ls_args[64];
+	int arg_count;
+	pid_t pid;
+	int status;
+
+	ls_path = handle_ls_path(command);
+	if (!ls_path)
+		return (1);
+
+	arg_count = setup_ls_args(command, ls_args);
+	if (arg_count == 0)
 	{
 		free(ls_path);
 		return (1);
 	}
-
-	/* Set up arguments */
-	exec_args[0] = ls_path;
-	for (i = 2; i < arg_count; i++)
-		exec_args[i - 1] = args[i];
-	exec_args[arg_count - 1] = NULL;
 
 	pid = fork();
 	if (pid == -1)
 	{
+		cleanup_ls_args(ls_args);
 		free(ls_path);
-		free(exec_args);
-		perror("fork");
 		return (1);
 	}
 
 	if (pid == 0)
 	{
-		execve(ls_path, exec_args, environ);
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+		execve(ls_path, ls_args, environ);
+		perror(shell_args[0]);
+		cleanup_ls_args(ls_args);
 		free(ls_path);
-		free(exec_args);
 		_exit(127);
 	}
 
 	waitpid(pid, &status, 0);
+	cleanup_ls_args(ls_args);
 	free(ls_path);
-	free(exec_args);
-	if (WIFEXITED(status))
-		return (WEXITSTATUS(status));
 
-	return (status);
+	return (WIFEXITED(status) ? WEXITSTATUS(status) : 1);
 }

@@ -24,6 +24,15 @@ char *get_command_path(char *command);
 int execute_builtin(char *command, char **args);
 
 /*
+ * Prototypes - Functions for path resolution
+ */
+char *init_path_resolution(const char *path, char *cwd, char **result);
+int process_path_token(const char *token, char *result);
+char *resolve_dots(const char *path);
+char *check_absolute_path(const char *command);
+char *check_relative_path(const char *command);
+
+/*
  * Prototypes - Functions for ls command handling
  */
 int is_ls_command(const char *command);
@@ -48,9 +57,10 @@ int process_single_command(char *line, char **args, char *program_name);
 /*
  * Prototypes - Functions for command utilities
  */
-char *resolve_dots(const char *path);
 char *get_command_path_ext(const char *command);
 int execute_command_ext(char *cmd_path, char **args);
+char **setup_exec_args(char **args, char *cmd_path, int arg_count);
+void execute_in_child(char *cmd_path, char **exec_args);
 
 /*
  * Prototypes - Core shell operations
