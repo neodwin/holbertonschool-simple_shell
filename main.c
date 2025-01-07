@@ -15,19 +15,49 @@ ssize_t read_input(char *buffer, size_t size)
 	while (total_read < (ssize_t)(size - 1))
 	{
 		bytes_read = read(STDIN_FILENO, &c, 1);
-		if (bytes_read <= 0)
-			return (bytes_read);
-
-		if (c == '\n')
-		{
-			buffer[total_read] = '\0';
-			return (total_read);
-		}
+		if (bytes_read <= 0 || c == '\n')
+			break;
 
 		buffer[total_read++] = c;
 	}
-	buffer[total_read] = '\0';
+
+	if (total_read > 0 || (bytes_read > 0 && c == '\n'))
+	{
+		if (c == '\n')
+			buffer[total_read++] = c;
+		buffer[total_read] = '\0';
+	}
+
 	return (total_read);
+}
+
+/**
+ * process_line - Process a single line of input
+ * @line: Line to process
+ * @program_name: Name of the program
+ */
+void process_line(char *line, char *program_name)
+{
+	char *command;
+	char *line_copy = strdup(line);
+	char *saveptr = NULL;
+
+	if (!line_copy)
+		return;
+
+	command = strtok_r(line_copy, "\n", &saveptr);
+	while (command)
+	{
+		char *tmp = command;
+
+		while (*tmp == ' ' || *tmp == '\t')
+			tmp++;
+		if (*tmp != '\0')
+			execute_command(command, program_name);
+		command = strtok_r(NULL, "\n", &saveptr);
+	}
+
+	free(line_copy);
 }
 
 /**
@@ -51,10 +81,10 @@ int main(int argc, char **argv)
 		if (bytes_read <= 0)
 			break;
 
-		execute_command(buffer, argv[0]);
+		process_line(buffer, argv[0]);
 
 		if (!isatty(STDIN_FILENO))
-			continue;
+			break;
 	}
 	return (0);
 }
