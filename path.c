@@ -4,50 +4,42 @@
  * find_path_in_environ - Searches through environ array for PATH
  *
  * This function scans environment variables to find PATH variable.
- * If PATH is not found in environment, returns a default value.
+ * If PATH is not found in environment, returns NULL.
  *
- * Return: Pointer to PATH value if found, or "/bin:/usr/bin" if not found
+ * Return: Pointer to PATH value if found, NULL if not found
  */
 char *find_path_in_environ(void)
 {
-    int i = 0;
-    char *path = NULL;
+	int i = 0;
+	char *path = NULL;
 
-    while (environ[i])
-    {
-        if (strncmp(environ[i], "PATH=", 5) == 0)
-        {
-            path = environ[i] + 5;
-            return (*path == '\0' ? NULL : path);
-        }
-        i++;
-    }
-    return (NULL);
+	while (environ[i])
+	{
+		if (strncmp(environ[i], "PATH=", 5) == 0)
+		{
+			path = environ[i] + 5;
+			return (*path == '\0' ? NULL : path);
+		}
+		i++;
+	}
+	return (NULL);
 }
 
 /**
  * check_current_path - Check if command exists in current path
  * @command: The command to check
  *
- * This function checks if the command contains a slash, indicating
- * it's a path rather than just a command name. If it is a path,
- * duplicates the string for later use.
- *
  * Return: Duplicated command if it contains '/', NULL otherwise
  */
 char *check_current_path(char *command)
 {
-    /* Return NULL if command is NULL */
-    if (command == NULL)
-        return (NULL);
+	if (command == NULL)
+		return (NULL);
 
-    /* Check if command contains a path separator */
-    if (strstr(command, "/") != NULL)
-        /* If it's a path, duplicate it and return */
-        return (strdup(command));
+	if (strstr(command, "/") != NULL)
+		return (strdup(command));
 
-    /* Not a path, return NULL */
-    return (NULL);
+	return (NULL);
 }
 
 /**
@@ -55,155 +47,82 @@ char *check_current_path(char *command)
  * @dir: The directory to check in
  * @command: The command name to find
  *
- * This function combines directory and command name to create a full path,
- * then checks if this path exists and is executable using stat.
- *
  * Return: Full path if command found, NULL otherwise
  */
 char *try_path(char *dir, char *command)
 {
-    char *full_path;
-    struct stat st;
+	char *full_path;
+	struct stat st;
 
-    /* Allocate memory for full path (+2 for '/' and '\0') */
-    full_path = malloc(strlen(dir) + strlen(command) + 2);
-    if (!full_path)
-        return (NULL);
+	full_path = malloc(strlen(dir) + strlen(command) + 2);
+	if (!full_path)
+		return (NULL);
 
-    /* Combine dir and command to create full path */
-    sprintf(full_path, "%s/%s", dir, command);
+	sprintf(full_path, "%s/%s", dir, command);
 
-    /* Check if path exists and is executable */
-    if (stat(full_path, &st) == 0 && (st.st_mode & S_IXUSR))
-        return (full_path);
+	if (stat(full_path, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (full_path);
 
-    /* Path not found or not executable, free memory and return NULL */
-    free(full_path);
-    return (NULL);
+	free(full_path);
+	return (NULL);
+}
+
+/**
+ * check_absolute_path - Check if command is an absolute path
+ * @command: Command to check
+ *
+ * Return: Duplicated command if valid, NULL otherwise
+ */
+char *check_absolute_path(char *command)
+{
+	struct stat st;
+
+	if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (strdup(command));
+	return (NULL);
 }
 
 /**
  * get_command_path - Get the full path of a command
  * @command: The command name to find
  *
- * This function first checks if command contains a path, then searches
- * in PATH directories. Uses strtok to split PATH into individual directories.
- *
  * Return: Full path to command if found, NULL if not found
  */
 char *get_command_path(char *command)
 {
-    char *path;
-    char *path_copy;
-    char *dir;
-    char *full_path;
-    struct stat st;
+	char *path, *path_copy, *dir;
+	char *full_path;
 
-    if (!command || !*command)
-        return (NULL);
+	if (!command || !*command)
+		return (NULL);
 
-    /* Check if command is an absolute or relative path */
-    if (strchr(command, '/') != NULL)
-    {
-        /* For relative paths starting with . or .. */
-        if (command[0] == '.')
-        {
-            /* Try the command path as-is first */
-            if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
-                return (strdup(command));
-            return (NULL);
-        }
-        /* For absolute paths or other relative paths */
-        if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
-            return (strdup(command));
-        return (NULL);
-    }
+	if (strchr(command, '/') != NULL)
+	{
+		if (command[0] == '.')
+			return (check_absolute_path(command));
+		return (check_absolute_path(command));
+	}
 
-    /* Get PATH and handle empty PATH case */
-    path = find_path_in_environ();
-    if (!path)
-    {
-        full_path = try_path(".", command);
-        if (full_path)
-            return (full_path);
-        return (NULL);
-    }
+	path = find_path_in_environ();
+	if (!path)
+		return (try_path(".", command));
 
-    path_copy = strdup(path);
-    if (!path_copy)
-        return (NULL);
+	path_copy = strdup(path);
+	if (!path_copy)
+		return (NULL);
 
-    dir = strtok(path_copy, ":");
-    while (dir)
-    {
-        full_path = try_path(dir, command);
-        if (full_path)
-        {
-            free(path_copy);
-            return (full_path);
-        }
-        dir = strtok(NULL, ":");
-    }
-    free(path_copy);
+	dir = strtok(path_copy, ":");
+	while (dir)
+	{
+		full_path = try_path(dir, command);
+		if (full_path)
+		{
+			free(path_copy);
+			return (full_path);
+		}
+		dir = strtok(NULL, ":");
+	}
+	free(path_copy);
 
-    return (try_path(".", command));
-}
-
-/**
- * execute_builtin - Execute a command with its arguments
- * @command: The command to execute
- * @args: Array of command and its arguments
- *
- * Return: Exit status of the command (127 if not found, 0 on success)
- */
-int execute_builtin(char *command, char **args)
-{
-    pid_t pid;
-    char *cmd_path;
-    int status = 0;
-    struct stat st;
-
-    /* Get full path of command */
-    cmd_path = get_command_path(command);
-    if (!cmd_path)
-    {
-        fprintf(stderr, "./hsh: 1: %s: not found\n", command);
-        return (127);
-    }
-
-    /* Check if file exists and is executable */
-    if (stat(cmd_path, &st) == -1 || !(st.st_mode & S_IXUSR))
-    {
-        fprintf(stderr, "./hsh: 1: %s: Permission denied\n", command);
-        free(cmd_path);
-        return (126);
-    }
-
-    /* Create new process */
-    pid = fork();
-    if (pid == -1)
-    {
-        free(cmd_path);
-        perror("fork");
-        return (1);
-    }
-
-    if (pid == 0)
-    {
-        /* Child process: execute the command */
-        execve(cmd_path, args, environ);
-        /* If execve returns, there was an error */
-        fprintf(stderr, "./hsh: 1: %s: not found\n", command);
-        free(cmd_path);
-        _exit(127);
-    }
-    else
-    {
-        /* Parent process: wait for child and clean up */
-        waitpid(pid, &status, 0);
-        free(cmd_path);
-        if (WIFEXITED(status))
-            return (WEXITSTATUS(status));
-    }
-    return (status);
+	return (try_path(".", command));
 }
