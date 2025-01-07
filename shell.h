@@ -38,6 +38,8 @@ char *check_relative_path(const char *command);
 int is_ls_command(const char *command);
 char *handle_ls_path(const char *command);
 int execute_ls(char *command, char **args);
+int setup_ls_path(char *path);
+char *normalize_path(const char *path);
 
 /*
  * Prototypes - Functions for builtin commands

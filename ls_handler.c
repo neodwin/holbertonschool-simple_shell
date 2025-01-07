@@ -2,7 +2,7 @@
 
 /**
  * handle_ls_path - Get path for ls command
- * @command: Command string
+ * @command: Command string (unused)
  *
  * Return: Path to ls executable (must be freed) or NULL
  */
@@ -10,6 +10,7 @@ char *handle_ls_path(const char *command)
 {
 	char path[PATH_MAX];
 	char *normalized;
+	(void)command;
 
 	if (!setup_ls_path(path))
 		return (NULL);
