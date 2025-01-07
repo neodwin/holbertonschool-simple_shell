@@ -37,6 +37,14 @@ int process_builtin(char *input);
 void execute_command_child(char *cmd_path, char **args);
 
 /*
+ * Prototypes - Functions for parsing
+ */
+int parse_args(char *line_copy, char **args, char *line);
+int parse_command(char *line, char **args);
+char *find_newline(char *str);
+int process_single_command(char *line, char **args, char *program_name);
+
+/*
  * Prototypes - Core shell operations
  */
 void display_prompt(void);

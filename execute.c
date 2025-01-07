@@ -29,9 +29,9 @@ int execute_builtin(char *command, char **args)
 	pid = fork();
 	if (pid == -1)
 	{
-			free(cmd_path);
-			perror("fork");
-			return (1);
+		free(cmd_path);
+		perror("fork");
+		return (1);
 	}
 
 	if (pid == 0)
@@ -47,63 +47,26 @@ int execute_builtin(char *command, char **args)
 }
 
 /**
- * parse_command - Parse command line into arguments
- * @line: Command line to parse
+ * process_single_command - Process and execute a single command
+ * @line: Command line to process
  * @args: Array to store arguments
+ * @program_name: Name of the program
  *
- * Return: Number of arguments parsed
+ * Return: Status of command execution
  */
-int parse_command(char *line, char **args)
+int process_single_command(char *line, char **args, char *program_name)
 {
-	char *token;
-	int i = 0;
-	char *line_copy = strdup(line);
-	char *start;
+	int status = 0;
 
-	if (!line_copy)
-		return (0);
-
-	/* Skip leading spaces */
-	start = line_copy;
-	while (*start == ' ' || *start == '\t')
-		start++;
-
-	/* Copy cleaned start back to line_copy */
-	if (start != line_copy)
-		memmove(line_copy, start, strlen(start) + 1);
-
-	token = strtok(line_copy, " \t");
-	while (token && i < 63)
+	if (*line && !process_builtin(line))
 	{
-		args[i] = token;
-		token = strtok(NULL, " \t");
-		i++;
+		if (parse_command(line, args) > 0 && args[0][0] != '\0')
+		{
+			args[0] = program_name;
+			status = execute_builtin(args[0], args);
+		}
 	}
-	args[i] = NULL;
-
-	/* Copy arguments back to original line */
-	for (i = 0; args[i]; i++)
-		args[i] = line + (args[i] - line_copy);
-
-	free(line_copy);
-	return (i);
-}
-
-/**
- * find_newline - Find next newline character
- * @str: String to search
- *
- * Return: Pointer to newline or NULL if not found
- */
-char *find_newline(char *str)
-{
-	while (*str)
-	{
-		if (*str == '\n')
-			return (str);
-		str++;
-	}
-	return (NULL);
+	return (status);
 }
 
 /**
@@ -141,14 +104,7 @@ int execute_command(char *input, char *program_name)
 		if (next_line)
 			*next_line = '\0';
 
-		if (*line && !process_builtin(line))
-		{
-			if (parse_command(line, args) > 0 && args[0][0] != '\0')
-			{
-				args[0] = program_name;
-				status = execute_builtin(args[0], args);
-			}
-		}
+		status = process_single_command(line, args, program_name);
 
 		if (next_line)
 			line = next_line + 1;

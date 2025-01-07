@@ -12,7 +12,7 @@ char *normalize_path(const char *path)
 	char resolved[PATH_MAX];
 	char *norm_path = NULL;
 	char *pwd = getcwd(NULL, 0);
-	
+
 	if (!pwd)
 		return (NULL);
 
@@ -24,6 +24,7 @@ char *normalize_path(const char *path)
 	{
 		/* Try to resolve relative to current directory */
 		char full_path[PATH_MAX];
+
 		snprintf(full_path, sizeof(full_path), "%s/%s", pwd, path);
 		if (realpath(full_path, resolved))
 			norm_path = strdup(resolved);
@@ -59,6 +60,7 @@ int is_ls_command(const char *command)
 	{
 		/* Check if normalized path ends with "/ls" */
 		size_t len = strlen(norm_path);
+
 		if (len >= 3 && strcmp(norm_path + len - 3, "/ls") == 0)
 			result = 1;
 		free(norm_path);
@@ -152,4 +154,4 @@ int execute_ls(char *command, char **args)
 			return (WEXITSTATUS(status));
 	}
 	return (status);
-} 
+}
