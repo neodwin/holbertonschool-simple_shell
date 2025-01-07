@@ -122,15 +122,21 @@ char *check_relative_path(const char *command)
 	char *full_path;
 	char *cmd_path;
 	struct stat st;
+	size_t needed;
 
 	if (!getcwd(cwd, sizeof(cwd)))
 		return (NULL);
 
-	full_path = malloc(PATH_MAX);
+	/* Calculate needed size including '/' and null terminator */
+	needed = strlen(cwd) + strlen(command) + 2;
+	if (needed > PATH_MAX)
+		return (NULL);
+
+	full_path = malloc(needed);
 	if (!full_path)
 		return (NULL);
 
-	snprintf(full_path, PATH_MAX, "%s/%s", cwd, command);
+	snprintf(full_path, needed, "%s/%s", cwd, command);
 	cmd_path = resolve_dots(full_path);
 	free(full_path);
 
