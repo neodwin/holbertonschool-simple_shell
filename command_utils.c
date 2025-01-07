@@ -9,40 +9,59 @@
 char *resolve_dots(const char *path)
 {
 	char *resolved = strdup(path);
-	char *token;
 	char *result;
-	int len = 0;
+	char *last_slash;
+	char cwd[PATH_MAX];
+	char *path_copy;
+	char *final_path;
+	char *token;
 
-	if (!resolved)
+	if (!resolved || !getcwd(cwd, sizeof(cwd)))
+	{
+		free(resolved);
 		return (NULL);
+	}
 
-	result = malloc(strlen(path) + 1);
+	/* Start with current directory */
+	result = strdup(cwd);
 	if (!result)
 	{
 		free(resolved);
 		return (NULL);
 	}
-	result[0] = '\0';
 
-	token = strtok(resolved, "/");
+	/* Make a copy for tokenization */
+	path_copy = strdup(path);
+	if (!path_copy)
+	{
+		free(resolved);
+		free(result);
+		return (NULL);
+	}
+
+	/* Process each part of the path */
+	token = strtok(path_copy, "/");
 	while (token)
 	{
-		if (strcmp(token, ".") == 0)
-			;
-		else if (strcmp(token, "..") == 0)
-			len = strlen(result) - 1;
-		else
+		if (strcmp(token, "..") == 0)
 		{
-			if (len > 0)
-				strcat(result, "/");
+			last_slash = strrchr(result, '/');
+			if (last_slash && last_slash != result)
+				*last_slash = '\0';
+		}
+		else if (strcmp(token, ".") != 0)
+		{
+			strcat(result, "/");
 			strcat(result, token);
-			len = strlen(result);
 		}
 		token = strtok(NULL, "/");
 	}
 
+	final_path = strdup(result);
 	free(resolved);
-	return (result);
+	free(result);
+	free(path_copy);
+	return (final_path);
 }
 
 /**
@@ -55,14 +74,55 @@ char *get_command_path_ext(const char *command)
 {
 	char *cmd_path;
 	struct stat st;
+	char cwd[PATH_MAX];
+	char *full_path;
+
+	fprintf(stderr, "Debug: Checking command: %s\n", command);
+
+	if (!command || !*command)
+		return (NULL);
 
 	if (command[0] == '/')
-		cmd_path = strdup(command);
-	else if (command[0] == '.')
-		cmd_path = resolve_dots(command);
-	else
-		cmd_path = get_command_path((char *)command);
+	{
+		fprintf(stderr, "Debug: Absolute path detected\n");
+		if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
+			return (strdup(command));
+		return (NULL);
+	}
 
+	if (command[0] == '.')
+	{
+		fprintf(stderr, "Debug: Relative path detected\n");
+		if (!getcwd(cwd, sizeof(cwd)))
+			return (NULL);
+
+		fprintf(stderr, "Debug: Current working directory: %s\n", cwd);
+
+		full_path = malloc(PATH_MAX);
+		if (!full_path)
+			return (NULL);
+
+		snprintf(full_path, PATH_MAX, "%s/%s", cwd, command);
+		fprintf(stderr, "Debug: Full path before resolution: %s\n", full_path);
+
+		cmd_path = resolve_dots(full_path);
+		fprintf(stderr, "Debug: Resolved path: %s\n", cmd_path ? cmd_path : "NULL");
+
+		free(full_path);
+
+		if (cmd_path && stat(cmd_path, &st) == 0 && (st.st_mode & S_IXUSR))
+		{
+			fprintf(stderr, "Debug: Found executable at: %s\n", cmd_path);
+			return (cmd_path);
+		}
+
+		fprintf(stderr, "Debug: Path not executable or not found\n");
+		free(cmd_path);
+		return (NULL);
+	}
+
+	fprintf(stderr, "Debug: Searching in PATH\n");
+	cmd_path = get_command_path((char *)command);
 	if (!cmd_path)
 		return (NULL);
 
