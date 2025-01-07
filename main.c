@@ -9,8 +9,6 @@
 int main(int argc, char **argv)
 {
 	char *line;
-	char **args;
-	int status = 0;
 	(void)argc;
 
 	while (1)
@@ -22,18 +20,13 @@ int main(int argc, char **argv)
 		if (!line)
 			break;
 
-		args = split_line(line);
-		if (args)
-		{
-			status = execute_command(args, argv[0]);
-			free_args(args);
-		}
+		execute_command(line, argv[0]);
 		free(line);
 
 		if (!isatty(STDIN_FILENO))
 			break;
 	}
-	return (status);
+	return (0);
 }
 
 /**
@@ -41,7 +34,7 @@ int main(int argc, char **argv)
  */
 void display_prompt(void)
 {
-	printf("$ ");
+	printf("#cisfun$ ");
 	fflush(stdout);
 }
 
@@ -66,51 +59,5 @@ char *read_line(void)
 		line[chars_read - 1] = '\0';
 
 	return (line);
-}
-/**
- * split_line - Split a line into arguments
- * @line: The line to split
- * Return: Array of arguments
- */
-char **split_line(char *line)
-{
-	char **args = malloc(sizeof(char *) * 64);
-	char *token;
-	int i = 0;
-
-	if (!args)
-		return (NULL);
-
-	token = strtok(line, " \t\n");
-	while (token && i < 63)
-	{
-		args[i] = strdup(token);
-		if (!args[i])
-		{
-			free_args(args);
-			return (NULL);
-		}
-		i++;
-		token = strtok(NULL, " \t\n");
-	}
-	args[i] = NULL;
-
-	return (args);
-}
-
-/**
- * free_args - Free argument array
- * @args: Array of arguments to free
- */
-void free_args(char **args)
-{
-	int i;
-
-	if (!args)
-		return;
-
-	for (i = 0; args[i]; i++)
-		free(args[i]);
-	free(args);
 }
 

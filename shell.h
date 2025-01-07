@@ -16,13 +16,8 @@ extern char **environ;
 /* Function prototypes */
 void display_prompt(void);
 char *read_line(void);
-char **split_line(char *line);
-int execute_command(char **args, char *program_name);
-void free_args(char **args);
-int handle_builtin(char **args);
+void execute_command(char *command, char *program_name);
 char *get_path(char *command);
-void execute_in_child(char *cmd_path, char **args, char *program_name);
-void handle_exit(char **args);
 char *try_path(const char *dir, const char *command);
 
 #endif /* SHELL_H */

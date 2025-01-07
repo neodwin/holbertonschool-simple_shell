@@ -10,35 +10,40 @@ void execute_in_child(char *cmd_path, char **args, char *program_name)
 {
 	if (execve(cmd_path, args, environ) == -1)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n", program_name, args[0]);
+		fprintf(stderr, "%s: No such file or directory\n",
+			program_name);
 		free(cmd_path);
 		exit(127);
 	}
 }
 
 /**
- * execute_command - Execute a command with arguments
- * @args: Array of arguments
+ * execute_command - Execute a command
+ * @command: Command to execute
  * @program_name: Name of the shell program
- * Return: Exit status of the command
  */
-int execute_command(char **args, char *program_name)
+void execute_command(char *command, char *program_name)
 {
 	pid_t pid;
 	int status;
+	char *args[2];
 	char *cmd_path;
 
-	if (!args || !args[0])
-		return (0);
+	/* Remove leading/trailing whitespace */
+	while (*command == ' ' || *command == '\t')
+		command++;
 
-	if (handle_builtin(args))
-		return (0);
+	if (*command == '\0')
+		return;
 
-	cmd_path = get_path(args[0]);
+	args[0] = command;
+	args[1] = NULL;
+
+	cmd_path = get_path(command);
 	if (!cmd_path)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n", program_name, args[0]);
-		return (127);
+		fprintf(stderr, "%s: No such file or directory\n", program_name);
+		return;
 	}
 
 	pid = fork();
@@ -46,17 +51,16 @@ int execute_command(char **args, char *program_name)
 	{
 		perror("fork");
 		free(cmd_path);
-		return (1);
+		return;
 	}
 
 	if (pid == 0)
 		execute_in_child(cmd_path, args, program_name);
-
-	waitpid(pid, &status, 0);
-	free(cmd_path);
-	if (WIFEXITED(status))
-		return (WEXITSTATUS(status));
-	return (0);
+	else
+	{
+		waitpid(pid, &status, 0);
+		free(cmd_path);
+	}
 }
 
 /**
@@ -72,11 +76,11 @@ void handle_exit(char **args)
 		status = atoi(args[1]);
 		if (status < 0)
 		{
-			fprintf(stderr, "./hsh: 1: exit: Illegal number: %s\n", args[1]);
+			fprintf(stderr, "./hsh: 1: exit: Illegal number: %s\n",
+				args[1]);
 			status = 2;
 		}
 	}
-	free_args(args);
 	exit(status);
 }
 
