@@ -21,11 +21,27 @@ int execute_builtin(char *command, char **args)
 {
 	char *cmd_path;
 	int status;
+	char *cmd_copy;
+	char *space;
 
-	if (is_ls_command(command))
+	cmd_copy = strdup(command);
+	if (!cmd_copy)
+		return (1);
+
+	/* Isolate command from arguments */
+	space = strchr(cmd_copy, ' ');
+	if (space)
+		*space = '\0';
+
+	if (is_ls_command(cmd_copy))
+	{
+		free(cmd_copy);
 		return (execute_ls(command, args));
+	}
 
-	cmd_path = get_command_path_ext(command);
+	cmd_path = get_command_path_ext(cmd_copy);
+	free(cmd_copy);
+
 	if (!cmd_path)
 		return (1);
 

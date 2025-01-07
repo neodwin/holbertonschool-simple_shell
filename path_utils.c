@@ -61,38 +61,73 @@ int process_path_token(const char *token, char *result)
  */
 char *resolve_dots(const char *path)
 {
-	char *resolved;
 	char *result;
 	char cwd[PATH_MAX];
-	char *path_copy;
-	char *final_path;
 	char *token;
+	char *saveptr;
+	char *path_copy;
+	char *temp;
 
-	resolved = init_path_resolution(path, cwd, &result);
-	if (!resolved)
+	if (!getcwd(cwd, sizeof(cwd)))
+		return (NULL);
+
+	fprintf(stderr, "DEBUG: CWD = %s\n", cwd);
+	fprintf(stderr, "DEBUG: Input path = %s\n", path);
+
+	/* If path starts with /, use it as is */
+	if (path[0] == '/')
+	{
+		result = strdup(path);
+		if (!result)
+			return (NULL);
+		return (result);
+	}
+
+	/* For relative paths, start from current directory */
+	result = strdup(cwd);
+	if (!result)
 		return (NULL);
 
 	path_copy = strdup(path);
 	if (!path_copy)
 	{
-		free(resolved);
 		free(result);
 		return (NULL);
 	}
 
-	token = strtok(path_copy, "/");
+	token = strtok_r(path_copy, "/", &saveptr);
 	while (token)
 	{
-		if (process_path_token(token, result) != 0)
-			break;
-		token = strtok(NULL, "/");
+		fprintf(stderr, "DEBUG: Processing token = %s\n", token);
+		if (strcmp(token, "..") == 0)
+		{
+			char *last_slash = strrchr(result, '/');
+			if (last_slash && last_slash != result)
+			{
+				*last_slash = '\0';
+				fprintf(stderr, "DEBUG: After .. = %s\n", result);
+			}
+		}
+		else if (strcmp(token, ".") != 0)
+		{
+			temp = malloc(strlen(result) + strlen(token) + 2);
+			if (!temp)
+			{
+				free(result);
+				free(path_copy);
+				return (NULL);
+			}
+			sprintf(temp, "%s/%s", result, token);
+			free(result);
+			result = temp;
+			fprintf(stderr, "DEBUG: After token = %s\n", result);
+		}
+		token = strtok_r(NULL, "/", &saveptr);
 	}
 
-	final_path = strdup(result);
-	free(resolved);
-	free(result);
+	fprintf(stderr, "DEBUG: Final path = %s\n", result);
 	free(path_copy);
-	return (final_path);
+	return (result);
 }
 
 /**
@@ -119,28 +154,31 @@ char *check_absolute_path(const char *command)
 char *check_relative_path(const char *command)
 {
 	char cwd[PATH_MAX];
-	char *full_path;
 	char *cmd_path;
 	struct stat st;
-	size_t needed;
 
-	if (!getcwd(cwd, sizeof(cwd)))
+	if (command[0] == '.' && command[1] == '/')
+	{
+		if (!getcwd(cwd, sizeof(cwd)))
+			return (NULL);
+
+		cmd_path = resolve_dots(command);
+		if (!cmd_path)
+			return (NULL);
+
+		if (stat(cmd_path, &st) == 0 && (st.st_mode & S_IXUSR))
+			return (cmd_path);
+
+		free(cmd_path);
+		return (NULL);
+	}
+
+	/* Handle other relative paths */
+	cmd_path = resolve_dots(command);
+	if (!cmd_path)
 		return (NULL);
 
-	/* Calculate needed size including '/' and null terminator */
-	needed = strlen(cwd) + strlen(command) + 2;
-	if (needed > PATH_MAX)
-		return (NULL);
-
-	full_path = malloc(needed);
-	if (!full_path)
-		return (NULL);
-
-	snprintf(full_path, needed, "%s/%s", cwd, command);
-	cmd_path = resolve_dots(full_path);
-	free(full_path);
-
-	if (cmd_path && stat(cmd_path, &st) == 0 && (st.st_mode & S_IXUSR))
+	if (stat(cmd_path, &st) == 0 && (st.st_mode & S_IXUSR))
 		return (cmd_path);
 
 	free(cmd_path);
