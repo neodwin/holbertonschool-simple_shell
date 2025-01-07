@@ -10,8 +10,8 @@ void execute_in_child(char *cmd_path, char **args, char *program_name)
 {
 	if (execve(cmd_path, args, environ) == -1)
 	{
-		fprintf(stderr, "%s: No such file or directory\n",
-			program_name);
+		fprintf(stderr, "%s: 1: %s: not found\n",
+			program_name, args[0]);
 		free(cmd_path);
 		exit(127);
 	}
@@ -115,9 +115,10 @@ void execute_command(char *command, char *program_name)
 	cmd_path = get_path(args[0]);
 	if (!cmd_path)
 	{
-		fprintf(stderr, "%s: No such file or directory\n", program_name);
+		fprintf(stderr, "%s: 1: %s: not found\n",
+			program_name, args[0]);
 		cleanup(cmd_path, args);
-		return;
+		exit(127);
 	}
 
 	pid = fork();
