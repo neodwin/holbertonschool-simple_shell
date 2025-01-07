@@ -57,13 +57,18 @@ int execute_builtin(char *command, char **args)
 int process_single_command(char *line, char **args, char *program_name)
 {
 	int status = 0;
+	char *original_command;
 
 	if (*line && !process_builtin(line))
 	{
 		if (parse_command(line, args) > 0 && args[0][0] != '\0')
 		{
+			original_command = strdup(args[0]);
+			if (!original_command)
+				return (1);
 			args[0] = program_name;
-			status = execute_builtin(args[0], args);
+			status = execute_builtin(original_command, args);
+			free(original_command);
 		}
 	}
 	return (status);
