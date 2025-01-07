@@ -12,8 +12,24 @@ int execute_builtin(char *command, char **args)
 	pid_t pid;
 	char *cmd_path;
 	int status = 0;
+	struct stat st;
 
-	/* Get full path and check if command exists */
+	/* Check if command exists before trying to execute */
+	if (command[0] != '/' && command[0] != '.')
+	{
+		if (stat(command, &st) != 0)
+		{
+			cmd_path = try_path("/bin", command);
+			if (!cmd_path)
+			{
+				fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+				return (127);
+			}
+			free(cmd_path);
+		}
+	}
+
+	/* Get full path of command */
 	cmd_path = get_command_path(command);
 	if (!cmd_path)
 	{
@@ -66,6 +82,23 @@ int parse_command(char *line, char **args)
 }
 
 /**
+ * find_newline - Find next newline character
+ * @str: String to search
+ *
+ * Return: Pointer to newline or NULL if not found
+ */
+char *find_newline(char *str)
+{
+	while (*str)
+	{
+		if (*str == '\n')
+			return (str);
+		str++;
+	}
+	return (NULL);
+}
+
+/**
  * execute_command - Processes and executes a command
  * @input: The command entered by the user
  *
@@ -75,8 +108,7 @@ int execute_command(char *input)
 {
 	char *args[64];
 	int status = 0;
-	char *saveptr;
-	char *line;
+	char *line, *next_line;
 	char *input_copy;
 
 	if (!input)
@@ -86,9 +118,13 @@ int execute_command(char *input)
 	if (!input_copy)
 		return (0);
 
-	line = strtok_r(input_copy, "\n", &saveptr);
-	while (line)
+	line = input_copy;
+	while (line && *line)
 	{
+		next_line = find_newline(line);
+		if (next_line)
+			*next_line = '\0';
+
 		while (*line == ' ' || *line == '\t')
 			line++;
 
@@ -100,7 +136,11 @@ int execute_command(char *input)
 					status = execute_builtin(args[0], args);
 			}
 		}
-		line = strtok_r(NULL, "\n", &saveptr);
+
+		if (next_line)
+			line = next_line + 1;
+		else
+			break;
 	}
 
 	free(input_copy);

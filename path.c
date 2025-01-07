@@ -4,9 +4,9 @@
  * find_path_in_environ - Searches through environ array for PATH
  *
  * This function scans environment variables to find PATH variable.
- * If PATH is not found in environment, returns NULL.
+ * If PATH is not found in environment, returns default path.
  *
- * Return: Pointer to PATH value if found, NULL if not found
+ * Return: Pointer to PATH value if found, default path if not found
  */
 char *find_path_in_environ(void)
 {
@@ -18,18 +18,18 @@ char *find_path_in_environ(void)
 		if (strncmp(environ[i], "PATH=", 5) == 0)
 		{
 			path = environ[i] + 5;
-			return (*path == '\0' ? NULL : path);
+			return (*path == '\0' ? "/bin:/usr/bin" : path);
 		}
 		i++;
 	}
-	return (NULL);
+	return ("/bin:/usr/bin");  /* Default PATH if not found */
 }
 
 /**
  * check_current_path - Check if command exists in current path
  * @command: The command to check
  *
- * Return: Duplicated command if it contains '/' and exists, NULL otherwise
+ * Return: Duplicated command if it exists, NULL otherwise
  */
 char *check_current_path(char *command)
 {
@@ -38,11 +38,9 @@ char *check_current_path(char *command)
 	if (command == NULL)
 		return (NULL);
 
-	if (strstr(command, "/") != NULL)
-	{
-		if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
-			return (strdup(command));
-	}
+	if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (strdup(command));
+
 	return (NULL);
 }
 
@@ -75,6 +73,37 @@ char *try_path(char *dir, char *command)
 }
 
 /**
+ * get_next_path - Get next path from PATH string
+ * @path_str: PATH string
+ * @start: Starting position
+ * @len: Length of next path
+ *
+ * Return: Pointer to next path, NULL if no more paths
+ */
+char *get_next_path(char *path_str, char **start, size_t *len)
+{
+	char *end;
+	char *path;
+
+	if (!path_str || !*start || !**start)
+		return (NULL);
+
+	end = strchr(*start, ':');
+	if (!end)
+	{
+		*len = strlen(*start);
+		path = *start;
+		*start = *start + *len;
+		return (path);
+	}
+
+	*len = end - *start;
+	path = *start;
+	*start = end + 1;
+	return (path);
+}
+
+/**
  * get_command_path - Get the full path of a command
  * @command: The command name to find
  *
@@ -82,40 +111,40 @@ char *try_path(char *dir, char *command)
  */
 char *get_command_path(char *command)
 {
-	char *path, *path_copy, *dir;
-	char *full_path;
+	char *path, *path_start, *dir;
+	char *full_path = NULL;
+	size_t dir_len;
+	char *temp_path;
 
 	if (!command || !*command)
 		return (NULL);
 
 	/* First check if command contains a path */
-	full_path = check_current_path(command);
-	if (full_path)
-		return (full_path);
+	if (strchr(command, '/'))
+		return (check_current_path(command));
 
 	/* Get PATH environment variable */
 	path = find_path_in_environ();
 	if (!path)
 		return (NULL);
 
-	/* Copy PATH to avoid modifying original */
-	path_copy = strdup(path);
-	if (!path_copy)
-		return (NULL);
-
-	/* Search in each directory in PATH */
-	dir = strtok(path_copy, ":");
-	while (dir)
+	/* Try each directory in PATH */
+	path_start = path;
+	while ((dir = get_next_path(path, &path_start, &dir_len)))
 	{
-		full_path = try_path(dir, command);
+		temp_path = malloc(dir_len + 1);
+		if (!temp_path)
+			return (NULL);
+
+		strncpy(temp_path, dir, dir_len);
+		temp_path[dir_len] = '\0';
+
+		full_path = try_path(temp_path, command);
+		free(temp_path);
+
 		if (full_path)
-		{
-			free(path_copy);
 			return (full_path);
-		}
-		dir = strtok(NULL, ":");
 	}
-	free(path_copy);
 
 	return (NULL);
 }
