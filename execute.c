@@ -58,24 +58,31 @@ int process_single_command(char *line, char **args, char *program_name)
 {
 	int status = 0;
 	char *original_command;
+	char *first_arg;
 
 	if (*line && !process_builtin(line))
 	{
 		if (parse_command(line, args) > 0 && args[0][0] != '\0')
 		{
-			/* Save original command */
+			/* Save original command and first argument */
 			original_command = strdup(args[0]);
+			first_arg = args[0];
 			if (!original_command)
 				return (1);
 
+			/* Set program name for error messages */
+			args[0] = program_name;
+
 			/* Execute command */
 			status = execute_builtin(original_command, args);
+
+			/* Restore original first argument */
+			args[0] = first_arg;
 
 			/* Cleanup */
 			free(original_command);
 		}
 	}
-	(void)program_name;
 	return (status);
 }
 
