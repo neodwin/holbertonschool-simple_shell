@@ -114,11 +114,13 @@ int parse_command(char *line, char **args)
  */
 char *find_newline(char *str)
 {
-	while (*str)
+	int i = 0;
+
+	while (str[i])
 	{
-		if (*str == '\n')
-			return (str);
-		str++;
+		if (str[i] == '\n')
+			return (&str[i]);
+		i++;
 	}
 	return (NULL);
 }

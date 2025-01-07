@@ -57,16 +57,41 @@ void display_prompt(void)
 char *get_input(void)
 {
 	char *input = NULL;
+	char *temp = NULL;
 	size_t input_size = 0;
+	size_t total_size = 0;
 	ssize_t input_read;
 
-	/* Read a line of input */
-	input_read = getline(&input, &input_size, stdin);
-	if (input_read == EOF)
+	while ((input_read = getline(&temp, &input_size, stdin)) != EOF)
 	{
-		free(input);
-		return (NULL);
+		if (input == NULL)
+		{
+			input = strdup(temp);
+			if (!input)
+			{
+				free(temp);
+				return (NULL);
+			}
+			total_size = strlen(input) + 1;
+		}
+		else
+		{
+			char *new_input = realloc(input, total_size + input_read);
+			if (!new_input)
+			{
+				free(input);
+				free(temp);
+				return (NULL);
+			}
+			input = new_input;
+			strcat(input, temp);
+			total_size += input_read;
+		}
 	}
+
+	free(temp);
+	if (!input)
+		return (NULL);
 
 	return (input);
 }
