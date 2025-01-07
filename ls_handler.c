@@ -45,6 +45,7 @@ int is_ls_command(const char *command)
 	const char *cmd = command;
 	char *norm_path;
 	int result = 0;
+	size_t len;
 
 	/* Skip leading spaces */
 	while (*cmd == ' ' || *cmd == '\t')
@@ -54,15 +55,27 @@ int is_ls_command(const char *command)
 	if (strcmp(cmd, "ls") == 0)
 		return (1);
 
+	/* Check for ls with options or arguments */
+	len = strlen(cmd);
+	if (len >= 2 && strncmp(cmd, "ls", 2) == 0 &&
+		(cmd[2] == ' ' || cmd[2] == '\t' || cmd[2] == '\0'))
+		return (1);
+
 	/* Try to normalize the path */
 	norm_path = normalize_path(cmd);
 	if (norm_path)
 	{
 		/* Check if normalized path ends with "/ls" */
-		size_t len = strlen(norm_path);
-
-		if (len >= 3 && strcmp(norm_path + len - 3, "/ls") == 0)
-			result = 1;
+		len = strlen(norm_path);
+		if (len >= 3)
+		{
+			/* Check for exact "/ls" match at end */
+			if (strcmp(norm_path + len - 3, "/ls") == 0)
+				result = 1;
+			/* Check for ls with options */
+			else if (len >= 4 && strncmp(norm_path + len - 4, "/ls ", 4) == 0)
+				result = 1;
+		}
 		free(norm_path);
 	}
 
@@ -81,6 +94,7 @@ char *handle_ls_path(const char *command)
 	struct stat st;
 	const char *cmd = command;
 	char *norm_path;
+	char *cmd_copy;
 
 	/* Skip leading spaces */
 	while (*cmd == ' ' || *cmd == '\t')
@@ -96,6 +110,9 @@ char *handle_ls_path(const char *command)
 				return (norm_path);
 			free(norm_path);
 		}
+		/* Try direct path if normalization fails */
+		if (stat(cmd, &st) == 0 && (st.st_mode & S_IXUSR))
+			return (strdup(cmd));
 		return (NULL);
 	}
 
@@ -107,6 +124,16 @@ char *handle_ls_path(const char *command)
 	ls_path = try_path("/bin", "ls");
 	if (ls_path)
 		return (ls_path);
+
+	/* Try current directory */
+	cmd_copy = strdup(cmd);
+	if (cmd_copy)
+	{
+		ls_path = try_path(".", cmd_copy);
+		free(cmd_copy);
+		if (ls_path)
+			return (ls_path);
+	}
 
 	return (NULL);
 }

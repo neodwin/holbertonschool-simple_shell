@@ -58,31 +58,45 @@ int process_single_command(char *line, char **args, char *program_name)
 {
 	int status = 0;
 	char *original_command;
-	char *first_arg;
+	char **exec_args = NULL;
+	int i;
 
 	if (*line && !process_builtin(line))
 	{
 		if (parse_command(line, args) > 0 && args[0][0] != '\0')
 		{
-			/* Save original command and first argument */
+			/* Save original command */
 			original_command = strdup(args[0]);
-			first_arg = args[0];
 			if (!original_command)
 				return (1);
 
-			/* Set program name for error messages */
-			args[0] = program_name;
+			/* Count arguments */
+			for (i = 0; args[i]; i++)
+				;
+
+			/* Create new argument array */
+			exec_args = malloc(sizeof(char *) * (i + 2));
+			if (!exec_args)
+			{
+				free(original_command);
+				return (1);
+			}
+
+			/* Copy arguments */
+			exec_args[0] = original_command;
+			for (i = 1; args[i]; i++)
+				exec_args[i] = args[i];
+			exec_args[i] = NULL;
 
 			/* Execute command */
-			status = execute_builtin(original_command, args);
-
-			/* Restore original first argument */
-			args[0] = first_arg;
+			status = execute_builtin(original_command, exec_args);
 
 			/* Cleanup */
 			free(original_command);
+			free(exec_args);
 		}
 	}
+	(void)program_name;
 	return (status);
 }
 

@@ -12,19 +12,31 @@ int parse_args(char *line_copy, char **args, char *line)
 {
 	char *token;
 	int i = 0;
+	char *start = line_copy;
+	size_t offset;
+
+	/* Skip leading spaces */
+	while (*start == ' ' || *start == '\t')
+		start++;
+
+	/* Move content to beginning of buffer */
+	if (start != line_copy)
+		memmove(line_copy, start, strlen(start) + 1);
 
 	token = strtok(line_copy, " \t");
 	while (token && i < 63)
 	{
-		args[i] = token;
+		/* Skip empty tokens */
+		if (*token)
+		{
+			/* Calculate offset in original string */
+			offset = token - line_copy;
+			args[i] = line + offset;
+			i++;
+		}
 		token = strtok(NULL, " \t");
-		i++;
 	}
 	args[i] = NULL;
-
-	/* Copy arguments back to original line */
-	for (i = 0; args[i]; i++)
-		args[i] = line + (args[i] - line_copy);
 
 	return (i);
 }
@@ -39,20 +51,10 @@ int parse_args(char *line_copy, char **args, char *line)
 int parse_command(char *line, char **args)
 {
 	char *line_copy = strdup(line);
-	char *start;
 	int result;
 
 	if (!line_copy)
 		return (0);
-
-	/* Skip leading spaces */
-	start = line_copy;
-	while (*start == ' ' || *start == '\t')
-		start++;
-
-	/* Copy cleaned start back to line_copy */
-	if (start != line_copy)
-		memmove(line_copy, start, strlen(start) + 1);
 
 	result = parse_args(line_copy, args, line);
 	free(line_copy);
