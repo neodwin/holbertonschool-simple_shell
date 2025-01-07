@@ -7,7 +7,8 @@
  */
 void handle_command_error(const char *program_name, const char *command)
 {
-	fprintf(stderr, "%s: line 1: %s: No such file or directory\n", program_name, command);
+	fprintf(stderr, "%s: line 1: %s: No such file or directory\n",
+		program_name, command);
 }
 
 /**
@@ -29,12 +30,10 @@ int execute_builtin(char *command, char **args)
 	if (!cmd_copy)
 		return (1);
 
-	/* Skip leading spaces */
 	cmd_start = cmd_copy;
 	while (*cmd_start == ' ' || *cmd_start == '\t')
 		cmd_start++;
 
-	/* Isolate command from arguments */
 	space = strchr(cmd_start, ' ');
 	if (space)
 		*space = '\0';
@@ -123,36 +122,15 @@ int execute_command(char *input, char *program_name)
 	char *next_line;
 	int status = 0;
 	char *args[64];
-	char *trimmed_line;
-	char *current_line;
 
 	line = input;
 	while (line && *line)
 	{
 		next_line = find_newline(line);
 		if (next_line)
-		{
 			*next_line = '\0';
-			current_line = strdup(line);
-			if (!current_line)
-				return (1);
-		}
-		else
-		{
-			current_line = strdup(line);
-			if (!current_line)
-				return (1);
-		}
 
-		/* Skip empty lines */
-		trimmed_line = current_line;
-		while (*trimmed_line == ' ' || *trimmed_line == '\t')
-			trimmed_line++;
-
-		if (*trimmed_line)  /* Only process non-empty lines */
-			status = process_single_command(current_line, args, program_name);
-
-		free(current_line);
+		status = process_command_line(line, args, program_name);
 
 		if (next_line)
 			line = next_line + 1;

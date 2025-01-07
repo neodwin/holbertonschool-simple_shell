@@ -54,83 +54,6 @@ int process_path_token(const char *token, char *result)
 }
 
 /**
- * resolve_dots - Resolve dots in path
- * @path: Path to resolve
- *
- * Return: Resolved path (must be freed) or NULL
- */
-char *resolve_dots(const char *path)
-{
-	char *result;
-	char cwd[PATH_MAX];
-	char *token;
-	char *saveptr;
-	char *path_copy;
-	char *temp;
-
-	if (!getcwd(cwd, sizeof(cwd)))
-		return (NULL);
-
-	fprintf(stderr, "DEBUG: CWD = %s\n", cwd);
-	fprintf(stderr, "DEBUG: Input path = %s\n", path);
-
-	/* If path starts with /, use it as is */
-	if (path[0] == '/')
-	{
-		result = strdup(path);
-		if (!result)
-			return (NULL);
-		return (result);
-	}
-
-	/* For relative paths, start from current directory */
-	result = strdup(cwd);
-	if (!result)
-		return (NULL);
-
-	path_copy = strdup(path);
-	if (!path_copy)
-	{
-		free(result);
-		return (NULL);
-	}
-
-	token = strtok_r(path_copy, "/", &saveptr);
-	while (token)
-	{
-		fprintf(stderr, "DEBUG: Processing token = %s\n", token);
-		if (strcmp(token, "..") == 0)
-		{
-			char *last_slash = strrchr(result, '/');
-			if (last_slash && last_slash != result)
-			{
-				*last_slash = '\0';
-				fprintf(stderr, "DEBUG: After .. = %s\n", result);
-			}
-		}
-		else if (strcmp(token, ".") != 0)
-		{
-			temp = malloc(strlen(result) + strlen(token) + 2);
-			if (!temp)
-			{
-				free(result);
-				free(path_copy);
-				return (NULL);
-			}
-			sprintf(temp, "%s/%s", result, token);
-			free(result);
-			result = temp;
-			fprintf(stderr, "DEBUG: After token = %s\n", result);
-		}
-		token = strtok_r(NULL, "/", &saveptr);
-	}
-
-	fprintf(stderr, "DEBUG: Final path = %s\n", result);
-	free(path_copy);
-	return (result);
-}
-
-/**
  * check_absolute_path - Check if absolute path exists and is executable
  * @command: Command to check
  *
@@ -173,7 +96,6 @@ char *check_relative_path(const char *command)
 		return (NULL);
 	}
 
-	/* Handle other relative paths */
 	cmd_path = resolve_dots(command);
 	if (!cmd_path)
 		return (NULL);
