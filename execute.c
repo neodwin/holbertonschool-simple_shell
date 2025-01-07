@@ -34,7 +34,14 @@ char **parse_command(char *command)
 	token = strtok(command, " \t\n");
 	while (token && i < 31)
 	{
-		args[i] = token;
+		args[i] = strdup(token);
+		if (!args[i])
+		{
+			while (--i >= 0)
+				free(args[i]);
+			free(args);
+			return (NULL);
+		}
 		i++;
 		token = strtok(NULL, " \t\n");
 	}
@@ -49,10 +56,16 @@ char **parse_command(char *command)
  */
 void cleanup(char *cmd_path, char **args)
 {
+	int i;
+
 	if (cmd_path)
 		free(cmd_path);
 	if (args)
+	{
+		for (i = 0; args[i]; i++)
+			free(args[i]);
 		free(args);
+	}
 }
 
 /**
@@ -76,7 +89,7 @@ char **prepare_command(char *command)
 
 	if (handle_builtin(args))
 	{
-		free(args);
+		cleanup(NULL, args);
 		return (NULL);
 	}
 
