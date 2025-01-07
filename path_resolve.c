@@ -26,9 +26,9 @@ char *resolve_path_dots(const char *path, char *cwd, char *result)
 	{
 		if (strcmp(token, "..") == 0)
 		{
-			last_slash = strrchr(result, "/");
+			last_slash = strrchr(result, '/');
 			if (last_slash && last_slash != result)
-				*last_slash = "\0";
+				*last_slash = '\0';
 		}
 		else if (strcmp(token, ".") != 0)
 		{
@@ -56,7 +56,7 @@ char *resolve_dots(const char *path)
 	if (!getcwd(cwd, sizeof(cwd)))
 		return (NULL);
 
-	if (path[0] == "/")
+	if (path[0] == '/')
 	{
 		result = strdup(path);
 		if (!result)

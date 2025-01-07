@@ -19,7 +19,7 @@ int process_command_line(char *line, char **args, char *program_name)
 		return (1);
 
 	trimmed_line = current_line;
-	while (*trimmed_line == " " || *trimmed_line == "\t")
+	while (*trimmed_line == ' ' || *trimmed_line == '\t')
 		trimmed_line++;
 
 	if (*trimmed_line)
