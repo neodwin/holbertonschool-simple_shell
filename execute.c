@@ -12,8 +12,8 @@ int execute_builtin(char *command, char **args)
 	pid_t pid;
 	char *cmd_path;
 	int status = 0;
-	struct stat st;
 
+	/* Get full path and check if command exists */
 	cmd_path = get_command_path(command);
 	if (!cmd_path)
 	{
@@ -21,13 +21,7 @@ int execute_builtin(char *command, char **args)
 		return (127);
 	}
 
-	if (stat(cmd_path, &st) == -1 || !(st.st_mode & S_IXUSR))
-	{
-		fprintf(stderr, "%s: 1: %s: Permission denied\n", args[0], command);
-		free(cmd_path);
-		return (126);
-	}
-
+	/* Create new process only if command exists */
 	pid = fork();
 	if (pid == -1)
 	{
