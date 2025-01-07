@@ -1,143 +1,109 @@
 #include "shell.h"
 
 /**
- * handle_command_error - Handle command execution error
- * @program_name: Name of the program
- * @command: Command that failed
- */
-void handle_command_error(const char *program_name, const char *command)
-{
-	fprintf(stderr, "%s: line 1: %s: No such file or directory\n",
-		program_name, command);
-}
-
-/**
- * execute_builtin - Execute builtin command
- * @command: Command to execute
+ * execute_in_child - Execute command in child process
+ * @cmd_path: Path to command
  * @args: Command arguments
- *
- * Return: 0 on success, 1 on failure
+ * @program_name: Name of shell program
  */
-int execute_builtin(char *command, char **args)
+void execute_in_child(char *cmd_path, char **args, char *program_name)
 {
+	if (execve(cmd_path, args, environ) == -1)
+	{
+		fprintf(stderr, "%s: 1: %s: not found\n", program_name, args[0]);
+		free(cmd_path);
+		exit(127);
+	}
+}
+
+/**
+ * execute_command - Execute a command with arguments
+ * @args: Array of arguments
+ * @program_name: Name of the shell program
+ * Return: Exit status of the command
+ */
+int execute_command(char **args, char *program_name)
+{
+	pid_t pid;
+	int status;
 	char *cmd_path;
-	int status;
-	char *cmd_copy;
-	char *space;
-	char *cmd_start;
 
-	cmd_copy = strdup(command);
-	if (!cmd_copy)
-		return (1);
+	if (!args || !args[0])
+		return (0);
 
-	cmd_start = cmd_copy;
-	while (*cmd_start == ' ' || *cmd_start == '\t')
-		cmd_start++;
+	if (handle_builtin(args))
+		return (0);
 
-	space = strchr(cmd_start, ' ');
-	if (space)
-		*space = '\0';
-
-	if (is_ls_command(cmd_start))
-	{
-		free(cmd_copy);
-		return (execute_ls(command, args));
-	}
-
-	cmd_path = get_command_path_ext(cmd_start);
-	free(cmd_copy);
-
+	cmd_path = get_path(args[0]);
 	if (!cmd_path)
+	{
+		fprintf(stderr, "%s: 1: %s: not found\n", program_name, args[0]);
 		return (127);
-
-	status = execute_command_ext(cmd_path, args);
-	return (status);
-}
-
-/**
- * prepare_command - Prepare command for execution
- * @line: Input line
- * @args: Array to store arguments
- * @program_name: Name of the program
- *
- * Return: Number of arguments or -1 on failure
- */
-int prepare_command(char *line, char **args, char *program_name)
-{
-	char *line_copy = strdup(line);
-	int arg_count;
-
-	if (!line_copy)
-		return (-1);
-
-	arg_count = parse_args(line_copy, args, line);
-	if (arg_count == 0)
-	{
-		free(line_copy);
-		return (-1);
 	}
 
-	args[0] = program_name;
-	free(line_copy);
-	return (arg_count);
+	pid = fork();
+	if (pid == -1)
+	{
+		perror("fork");
+		free(cmd_path);
+		return (1);
+	}
+
+	if (pid == 0)
+		execute_in_child(cmd_path, args, program_name);
+
+	waitpid(pid, &status, 0);
+	free(cmd_path);
+	if (WIFEXITED(status))
+		return (WEXITSTATUS(status));
+	return (0);
 }
 
 /**
- * process_single_command - Process a single command
- * @line: Command line to process
- * @args: Array to store arguments
- * @program_name: Name of the program
- *
- * Return: Command execution status
+ * handle_exit - Handle exit builtin command
+ * @args: Command arguments
  */
-int process_single_command(char *line, char **args, char *program_name)
+void handle_exit(char **args)
 {
-	int arg_count;
-	int status;
-
-	arg_count = prepare_command(line, args, program_name);
-	if (arg_count == -1)
-		return (0);
-
-	if (process_builtin(line))
-		return (0);
-
-	status = execute_builtin(line, args);
-	if (status == 127)
-		handle_command_error(program_name, line);
-
-	return (status);
-}
-
-/**
- * execute_command - Execute command line
- * @input: Command line to execute
- * @program_name: Name of the program
- *
- * Return: Command execution status
- */
-int execute_command(char *input, char *program_name)
-{
-	char *line;
-	char *next_line;
 	int status = 0;
-	char *args[64];
 
-	line = input;
-	while (line && *line)
+	if (args[1])
 	{
-		next_line = find_newline(line);
-		if (next_line)
-			*next_line = '\0';
+		status = atoi(args[1]);
+		if (status < 0)
+		{
+			fprintf(stderr, "./hsh: 1: exit: Illegal number: %s\n", args[1]);
+			status = 2;
+		}
+	}
+	free_args(args);
+	exit(status);
+}
 
-		status = process_command_line(line, args, program_name);
+/**
+ * handle_builtin - Handle built-in commands
+ * @args: Array of arguments
+ * Return: 1 if builtin was handled, 0 otherwise
+ */
+int handle_builtin(char **args)
+{
+	int i;
 
-		if (next_line)
-			line = next_line + 1;
-		else
-			break;
+	if (!args || !args[0])
+		return (0);
+
+	if (strcmp(args[0], "exit") == 0)
+	{
+		handle_exit(args);
 	}
 
-	return (status);
+	if (strcmp(args[0], "env") == 0)
+	{
+		for (i = 0; environ[i]; i++)
+			printf("%s\n", environ[i]);
+		return (1);
+	}
+
+	return (0);
 }
 

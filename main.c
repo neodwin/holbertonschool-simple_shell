@@ -1,44 +1,43 @@
 #include "shell.h"
 
 /**
- * main - Entry point for the shell
+ * main - Simple shell main function
  * @argc: Argument count
  * @argv: Argument vector
- *
- * Return: Last command's exit status
+ * Return: Exit status
  */
 int main(int argc, char **argv)
 {
-	char *input;
-	int last_status = 0;
+	char *line;
+	char **args;
+	int status = 0;
 	(void)argc;
 
 	while (1)
 	{
-		/* Check if input is from an interactive terminal */
 		if (isatty(STDIN_FILENO))
 			display_prompt();
 
-		/* Read user input */
-		input = get_input();
-		if (input == NULL)
+		line = read_line();
+		if (!line)
 			break;
 
-		/* Process and execute the command */
-		last_status = execute_command(input, argv[0]);
-		free(input);
-		if (!isatty(STDIN_FILENO))
-			exit(last_status);
-	}
+		args = split_line(line);
+		if (args)
+		{
+			status = execute_command(args, argv[0]);
+			free_args(args);
+		}
+		free(line);
 
-	return (last_status);
+		if (!isatty(STDIN_FILENO))
+			break;
+	}
+	return (status);
 }
 
 /**
- * display_prompt - Displays the shell prompt
- *
- * This function prints the prompt symbol (e.g., "$ ") to indicate
- * the shell is ready to accept user input.
+ * display_prompt - Display shell prompt
  */
 void display_prompt(void)
 {
@@ -47,51 +46,71 @@ void display_prompt(void)
 }
 
 /**
- * get_input - Reads input from the user
- *
- * This function uses getline to read a line of input from stdin.
- * If the user inputs EOF (Ctrl+D), the function returns NULL.
- *
- * Return: Pointer to the input string, or NULL on EOF
+ * read_line - Read a line from stdin
+ * Return: The line read, or NULL on EOF/error
  */
-char *get_input(void)
+char *read_line(void)
 {
-	char *input = NULL;
-	char *temp = NULL;
-	size_t input_size = 0;
-	size_t total_size = 0;
-	ssize_t input_read;
+	char *line = NULL;
+	size_t bufsize = 0;
+	ssize_t chars_read;
 
-	while ((input_read = getline(&temp, &input_size, stdin)) != EOF)
+	chars_read = getline(&line, &bufsize, stdin);
+	if (chars_read == -1)
 	{
-		if (input == NULL)
-		{
-			input = strdup(temp);
-			if (!input)
-			{
-				free(temp);
-				return (NULL);
-			}
-			total_size = strlen(input) + 1;
-		}
-		else
-		{
-			char *new_input = realloc(input, total_size + input_read);
-			if (!new_input)
-			{
-				free(input);
-				free(temp);
-				return (NULL);
-			}
-			input = new_input;
-			strcat(input, temp);
-			total_size += input_read;
-		}
+		free(line);
+		return (NULL);
 	}
 
-	free(temp);
-	if (!input)
+	if (line[chars_read - 1] == '\n')
+		line[chars_read - 1] = '\0';
+
+	return (line);
+}
+/**
+ * split_line - Split a line into arguments
+ * @line: The line to split
+ * Return: Array of arguments
+ */
+char **split_line(char *line)
+{
+	char **args = malloc(sizeof(char *) * 64);
+	char *token;
+	int i = 0;
+
+	if (!args)
 		return (NULL);
 
-	return (input);
+	token = strtok(line, " \t\n");
+	while (token && i < 63)
+	{
+		args[i] = strdup(token);
+		if (!args[i])
+		{
+			free_args(args);
+			return (NULL);
+		}
+		i++;
+		token = strtok(NULL, " \t\n");
+	}
+	args[i] = NULL;
+
+	return (args);
 }
+
+/**
+ * free_args - Free argument array
+ * @args: Array of arguments to free
+ */
+void free_args(char **args)
+{
+	int i;
+
+	if (!args)
+		return;
+
+	for (i = 0; args[i]; i++)
+		free(args[i]);
+	free(args);
+}
+
