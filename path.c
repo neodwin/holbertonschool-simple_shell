@@ -56,7 +56,8 @@ char *get_path(char *command)
 	if (!command)
 		return (NULL);
 
-	if (command[0] == '/' || command[0] == '.')
+	if (command[0] == '/' || command[0] == '.' ||
+	    strstr(command, "..") != NULL)
 	{
 		if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
 			return (strdup(command));
