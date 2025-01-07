@@ -1,100 +1,89 @@
 #include "shell.h"
 
 /**
- * read_input - Read input from stdin
- * @buffer: Buffer to store input
- * @size: Size of buffer
- * Return: Number of bytes read or -1 on error
+ * display_prompt - Display shell prompt
  */
-ssize_t read_input(char *buffer, size_t size)
+void display_prompt(void)
 {
-	ssize_t bytes_read = 0;
-	ssize_t total_read = 0;
-	char c;
-
-	while (total_read < (ssize_t)(size - 1))
-	{
-		bytes_read = read(STDIN_FILENO, &c, 1);
-		if (bytes_read <= 0 || c == '\n')
-			break;
-
-		buffer[total_read++] = c;
-	}
-
-	if (total_read > 0 || (bytes_read > 0 && c == '\n'))
-	{
-		if (c == '\n')
-			buffer[total_read++] = c;
-		buffer[total_read] = '\0';
-	}
-
-	return (total_read);
+	if (isatty(STDIN_FILENO))
+		printf("#cisfun$ ");
 }
 
 /**
- * process_line - Process a single line of input
- * @line: Line to process
- * @program_name: Name of the program
+ * read_input - Read input from stdin
+ * @buffer: Buffer to store input
+ * @size: Size of buffer
+ * Return: Number of characters read
+ */
+ssize_t read_input(char *buffer, size_t size)
+{
+	ssize_t chars_read = getline(&buffer, &size, stdin);
+
+	if (chars_read == -1)
+	{
+		if (isatty(STDIN_FILENO))
+			printf("\n");
+		return (-1);
+	}
+
+	return (chars_read);
+}
+
+/**
+ * process_line - Process input line
+ * @line: Input line to process
+ * @program_name: Name of the shell program
  */
 void process_line(char *line, char *program_name)
 {
-	char *command;
-	char *line_copy = strdup(line);
-	char *saveptr = NULL;
+	char *line_copy = NULL;
+	char *command = NULL;
 
+	if (!line)
+		return;
+
+	line_copy = strdup(line);
 	if (!line_copy)
 		return;
 
-	command = strtok_r(line_copy, "\n", &saveptr);
-	while (command)
+	command = strtok(line_copy, "\n");
+	while (command != NULL)
 	{
-		char *tmp = command;
-
-		while (*tmp == ' ' || *tmp == '\t')
-			tmp++;
-		if (*tmp != '\0')
+		if (strlen(command) > 0)
+		{
 			execute_command(command, program_name);
-		command = strtok_r(NULL, "\n", &saveptr);
+		}
+		command = strtok(NULL, "\n");
 	}
 
 	free(line_copy);
 }
 
 /**
- * main - Simple shell main function
+ * main - Entry point
  * @argc: Argument count
  * @argv: Argument vector
  * Return: Exit status
  */
 int main(int argc, char **argv)
 {
-	char buffer[1024];
-	ssize_t bytes_read;
+	char *line = NULL;
+	size_t len = 0;
+	char *program_name = argv[0];
+
 	(void)argc;
 
 	while (1)
 	{
-		if (isatty(STDIN_FILENO))
-			display_prompt();
+		display_prompt();
 
-		bytes_read = read_input(buffer, sizeof(buffer));
-		if (bytes_read <= 0)
+		if (read_input(line, len) == -1)
 			break;
 
-		process_line(buffer, argv[0]);
-
-		if (!isatty(STDIN_FILENO))
-			break;
+		process_line(line, program_name);
 	}
-	return (0);
-}
 
-/**
- * display_prompt - Display shell prompt
- */
-void display_prompt(void)
-{
-	printf("#cisfun$ ");
-	fflush(stdout);
+	free(line);
+	return (0);
 }
 
