@@ -23,7 +23,7 @@ int parse_args(char *line_copy, char **args, char *line)
 	if (start != line_copy)
 		memmove(line_copy, start, strlen(start) + 1);
 
-	/* Remove trailing spaces */
+	/* Remove trailing spaces and newline */
 	start = line_copy + strlen(line_copy) - 1;
 	while (start > line_copy && (*start == ' ' || *start == '\t' ||
 		*start == '\n'))
@@ -39,11 +39,8 @@ int parse_args(char *line_copy, char **args, char *line)
 		/* Parse remaining arguments */
 		while ((token = strtok(NULL, " \t")) && i < 63)
 		{
-			if (*token)
-			{
-				offset = token - line_copy;
-				args[i++] = line + offset;
-			}
+			offset = token - line_copy;
+			args[i++] = line + offset;
 		}
 	}
 	args[i] = NULL;

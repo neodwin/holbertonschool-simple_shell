@@ -23,23 +23,29 @@ int execute_builtin(char *command, char **args)
 	int status;
 	char *cmd_copy;
 	char *space;
+	char *cmd_start;
 
 	cmd_copy = strdup(command);
 	if (!cmd_copy)
 		return (1);
 
+	/* Skip leading spaces */
+	cmd_start = cmd_copy;
+	while (*cmd_start == ' ' || *cmd_start == '\t')
+		cmd_start++;
+
 	/* Isolate command from arguments */
-	space = strchr(cmd_copy, ' ');
+	space = strchr(cmd_start, ' ');
 	if (space)
 		*space = '\0';
 
-	if (is_ls_command(cmd_copy))
+	if (is_ls_command(cmd_start))
 	{
 		free(cmd_copy);
 		return (execute_ls(command, args));
 	}
 
-	cmd_path = get_command_path_ext(cmd_copy);
+	cmd_path = get_command_path_ext(cmd_start);
 	free(cmd_copy);
 
 	if (!cmd_path)
