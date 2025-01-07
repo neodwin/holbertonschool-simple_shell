@@ -88,6 +88,9 @@ int execute_command_ext(char *cmd_path, char **args)
 	char **exec_args;
 	int arg_count;
 
+	if (!cmd_path)
+		return (127);
+
 	/* Count arguments */
 	for (arg_count = 1; args[arg_count]; arg_count++)
 		;

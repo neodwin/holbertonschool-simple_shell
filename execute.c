@@ -43,7 +43,7 @@ int execute_builtin(char *command, char **args)
 	free(cmd_copy);
 
 	if (!cmd_path)
-		return (1);
+		return (127);
 
 	status = execute_command_ext(cmd_path, args);
 	return (status);
@@ -98,7 +98,7 @@ int process_single_command(char *line, char **args, char *program_name)
 		return (0);
 
 	status = execute_builtin(line, args);
-	if (status != 0)
+	if (status == 127)
 		handle_command_error(program_name, line);
 
 	return (status);
