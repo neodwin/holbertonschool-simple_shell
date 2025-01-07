@@ -9,28 +9,9 @@
  */
 char *normalize_path(const char *path)
 {
-	char resolved[PATH_MAX];
-	char *norm_path = NULL;
-	char *pwd = getcwd(NULL, 0);
-
-	if (!pwd)
+	char *norm_path = strdup(path);
+	if (!norm_path)
 		return (NULL);
-
-	if (realpath(path, resolved))
-	{
-		norm_path = strdup(resolved);
-	}
-	else
-	{
-		/* Try to resolve relative to current directory */
-		char full_path[PATH_MAX];
-
-		snprintf(full_path, sizeof(full_path), "%s/%s", pwd, path);
-		if (realpath(full_path, resolved))
-			norm_path = strdup(resolved);
-	}
-
-	free(pwd);
 	return (norm_path);
 }
 
@@ -43,8 +24,6 @@ char *normalize_path(const char *path)
 int is_ls_command(const char *command)
 {
 	const char *cmd = command;
-	char *norm_path;
-	int result = 0;
 	size_t len;
 
 	/* Skip leading spaces */
@@ -61,25 +40,7 @@ int is_ls_command(const char *command)
 		(cmd[2] == ' ' || cmd[2] == '\t' || cmd[2] == '\0'))
 		return (1);
 
-	/* Try to normalize the path */
-	norm_path = normalize_path(cmd);
-	if (norm_path)
-	{
-		/* Check if normalized path ends with "/ls" */
-		len = strlen(norm_path);
-		if (len >= 3)
-		{
-			/* Check for exact "/ls" match at end */
-			if (strcmp(norm_path + len - 3, "/ls") == 0)
-				result = 1;
-			/* Check for ls with options */
-			else if (len >= 4 && strncmp(norm_path + len - 4, "/ls ", 4) == 0)
-				result = 1;
-		}
-		free(norm_path);
-	}
-
-	return (result);
+	return (0);
 }
 
 /**
@@ -90,52 +51,23 @@ int is_ls_command(const char *command)
  */
 char *handle_ls_path(const char *command)
 {
-	char *ls_path;
 	struct stat st;
 	const char *cmd = command;
-	char *norm_path;
-	char *cmd_copy;
 
 	/* Skip leading spaces */
 	while (*cmd == ' ' || *cmd == '\t')
 		cmd++;
 
-	/* If it's a path (contains slashes), try to normalize it */
-	if (strchr(cmd, '/'))
-	{
-		norm_path = normalize_path(cmd);
-		if (norm_path)
-		{
-			if (stat(norm_path, &st) == 0 && (st.st_mode & S_IXUSR))
-				return (norm_path);
-			free(norm_path);
-		}
-		/* Try direct path if normalization fails */
-		if (stat(cmd, &st) == 0 && (st.st_mode & S_IXUSR))
-			return (strdup(cmd));
-		return (NULL);
-	}
+	/* Try direct path first */
+	if (stat(cmd, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (strdup(cmd));
 
 	/* Always try /bin/ls first */
 	if (stat("/bin/ls", &st) == 0 && (st.st_mode & S_IXUSR))
 		return (strdup("/bin/ls"));
 
 	/* If /bin/ls doesn't work, try PATH */
-	ls_path = try_path("/bin", "ls");
-	if (ls_path)
-		return (ls_path);
-
-	/* Try current directory */
-	cmd_copy = strdup(cmd);
-	if (cmd_copy)
-	{
-		ls_path = try_path(".", cmd_copy);
-		free(cmd_copy);
-		if (ls_path)
-			return (ls_path);
-	}
-
-	return (NULL);
+	return (try_path("/bin", "ls"));
 }
 
 /**
@@ -151,8 +83,7 @@ int execute_ls(char *command, char **args)
 	char *ls_path;
 	int status = 0;
 
-	/* Get the ls command path */
-	ls_path = handle_ls_path("ls");
+	ls_path = strdup(command);
 	if (!ls_path)
 	{
 		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
@@ -169,9 +100,8 @@ int execute_ls(char *command, char **args)
 
 	if (pid == 0)
 	{
-		char *cmd = ls_path;
-		execve(cmd, args, environ);
-		perror("execve");
+		execve(ls_path, args, environ);
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], ls_path);
 		free(ls_path);
 		_exit(127);
 	}

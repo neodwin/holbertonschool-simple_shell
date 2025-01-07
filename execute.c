@@ -1,6 +1,51 @@
 #include "shell.h"
 
 /**
+ * resolve_dots - Resolve dots in path
+ * @path: Path to resolve
+ *
+ * Return: Resolved path (must be freed) or NULL
+ */
+char *resolve_dots(const char *path)
+{
+	char *resolved = strdup(path);
+	char *token;
+	char *result;
+	int len = 0;
+
+	if (!resolved)
+		return (NULL);
+
+	result = malloc(strlen(path) + 1);
+	if (!result)
+	{
+		free(resolved);
+		return (NULL);
+	}
+	result[0] = '\0';
+
+	token = strtok(resolved, "/");
+	while (token)
+	{
+		if (strcmp(token, ".") == 0)
+			;
+		else if (strcmp(token, "..") == 0)
+			len = strlen(result) - 1;
+		else
+		{
+			if (len > 0)
+				strcat(result, "/");
+			strcat(result, token);
+			len = strlen(result);
+		}
+		token = strtok(NULL, "/");
+	}
+
+	free(resolved);
+	return (result);
+}
+
+/**
  * execute_builtin - Execute a command with its arguments
  * @command: The command to execute
  * @args: Array of command and its arguments
@@ -12,16 +57,31 @@ int execute_builtin(char *command, char **args)
 	pid_t pid;
 	char *cmd_path;
 	int status = 0;
+	struct stat st;
 
 	/* Handle ls command specially */
 	if (is_ls_command(command))
 		return (execute_ls(command, args));
 
-	/* Get full path of command */
-	cmd_path = get_command_path(command);
+	/* Try direct path first */
+	if (command[0] == '/')
+		cmd_path = strdup(command);
+	else if (command[0] == '.')
+		cmd_path = resolve_dots(command);
+	else
+		cmd_path = get_command_path(command);
+
 	if (!cmd_path)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n", args[0], args[0]);
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+		return (127);
+	}
+
+	/* Check if file exists and is executable */
+	if (stat(cmd_path, &st) != 0 || !(st.st_mode & S_IXUSR))
+	{
+		fprintf(stderr, "%s: 1: %s: not found\n", args[0], command);
+		free(cmd_path);
 		return (127);
 	}
 
@@ -58,45 +118,21 @@ int process_single_command(char *line, char **args, char *program_name)
 {
 	int status = 0;
 	char *original_command;
-	char **exec_args = NULL;
-	int i;
 
 	if (*line && !process_builtin(line))
 	{
 		if (parse_command(line, args) > 0 && args[0][0] != '\0')
 		{
-			/* Save original command */
 			original_command = strdup(args[0]);
 			if (!original_command)
 				return (1);
 
-			/* Count arguments */
-			for (i = 0; args[i]; i++)
-				;
+			args[0] = program_name;
+			status = execute_builtin(original_command, args);
 
-			/* Create new argument array */
-			exec_args = malloc(sizeof(char *) * (i + 2));
-			if (!exec_args)
-			{
-				free(original_command);
-				return (1);
-			}
-
-			/* Copy arguments */
-			exec_args[0] = original_command;
-			for (i = 1; args[i]; i++)
-				exec_args[i] = args[i];
-			exec_args[i] = NULL;
-
-			/* Execute command */
-			status = execute_builtin(original_command, exec_args);
-
-			/* Cleanup */
 			free(original_command);
-			free(exec_args);
 		}
 	}
-	(void)program_name;
 	return (status);
 }
 
