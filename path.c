@@ -1,87 +1,93 @@
 #include "shell.h"
 
 /**
- * try_path - Attempt to find a command in a specific directory
- * @dir: Directory to search in
+ * try_path - Try to find command in specified directory
+ * @dir: Directory path to search in
  * @command: Command name to look for
  *
- * Description: This function constructs a full path by combining a directory
- * and command name, then checks if that path exists and is executable.
- * It allocates memory for the full path and performs proper error checking
- * on memory allocation and file status.
+ * Description: Attempts to locate command in given directory.
+ * Constructs full path, checks if file exists and is executable.
+ * Allocates memory for path string if command is found.
  *
- * Return: Full path to command if found and executable, NULL otherwise
+ * Return: Full path to command if found, NULL otherwise
  */
 char *try_path(const char *dir, const char *command)
 {
-	char *cmd_path;
+	char *full_path;
+	size_t dir_len, cmd_len;
 	struct stat st;
 
-	cmd_path = malloc(strlen(dir) + strlen(command) + 2);
-	if (!cmd_path)
+	dir_len = strlen(dir);
+	cmd_len = strlen(command);
+	full_path = malloc(dir_len + cmd_len + 2);
+	if (!full_path)
 		return (NULL);
 
-	sprintf(cmd_path, "%s/%s", dir, command);
-	if (stat(cmd_path, &st) == 0 && (st.st_mode & S_IXUSR))
-		return (cmd_path);
+	strcpy(full_path, dir);
+	if (full_path[dir_len - 1] != '/')
+	{
+		full_path[dir_len] = '/';
+		full_path[dir_len + 1] = '\0';
+		dir_len++;
+	}
+	strcpy(full_path + dir_len, command);
 
-	free(cmd_path);
+	if (stat(full_path, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (full_path);
+
+	free(full_path);
 	return (NULL);
 }
 
 /**
- * find_path_in_env - Find the PATH variable in environment
+ * find_path_in_env - Find PATH variable in environment
  *
- * Description: This function searches through the environment variables
- * to find the PATH variable. If found, it returns a pointer to the value
- * portion of PATH (after "PATH="). If PATH is not found in the environment,
- * it returns NULL, ensuring the shell behaves correctly in minimal
- * environments.
+ * Description: Searches through environment variables to find
+ * PATH. Returns pointer to value part of PATH=value string.
+ * Handles case where PATH is not set or is empty.
  *
- * Return: Pointer to PATH value if found, NULL if not found
+ * Return: Pointer to PATH value, NULL if not found
  */
 char *find_path_in_env(void)
 {
-	int i;
+	char **env;
+	const char *path_prefix = "PATH=";
+	size_t prefix_len = strlen(path_prefix);
 
-	for (i = 0; environ[i]; i++)
+	for (env = environ; *env; env++)
 	{
-		if (strncmp(environ[i], "PATH=", 5) == 0)
-			return (environ[i] + 5);
+		if (strncmp(*env, path_prefix, prefix_len) == 0)
+			return (*env + prefix_len);
 	}
 	return (NULL);
 }
 
 /**
- * get_path - Get the full path of a command
- * @command: Command name to find
+ * get_path - Get full path for a command
+ * @command: Command name to resolve
  *
- * Description: This function finds the full path of a command by:
- * 1. Checking if it's already a path (starts with / or .)
- * 2. Looking in PATH directories if it's a bare command
- * The function handles:
- * - Absolute paths (/bin/ls)
- * - Relative paths (./script)
- * - Commands in PATH (ls)
- * - Memory allocation and cleanup
+ * Description: Resolves full path for command by:
+ * 1. Checking if command contains path separator
+ * 2. Checking if command exists in current directory
+ * 3. Searching in PATH directories
+ * Handles memory allocation and path construction.
  *
- * Return: Full path to command if found, NULL if not found or on error
+ * Return: Full path to command if found, NULL otherwise
  */
 char *get_path(char *command)
 {
-	char *path_env, *path_copy, *dir, *cmd_path;
+	char *path_env, *path_copy, *dir, *result;
 	struct stat st;
 
-	if (!command)
-		return (NULL);
-
-	if (command[0] == '/' || command[0] == '.' ||
-	    strstr(command, "..") != NULL)
+	if (strchr(command, '/'))
 	{
 		if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
 			return (strdup(command));
 		return (NULL);
 	}
+
+	if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (strdup(command));
 
 	path_env = find_path_in_env();
 	if (!path_env)
@@ -94,14 +100,15 @@ char *get_path(char *command)
 	dir = strtok(path_copy, ":");
 	while (dir)
 	{
-		cmd_path = try_path(dir, command);
-		if (cmd_path)
+		result = try_path(dir, command);
+		if (result)
 		{
 			free(path_copy);
-			return (cmd_path);
+			return (result);
 		}
 		dir = strtok(NULL, ":");
 	}
+
 	free(path_copy);
 	return (NULL);
 }

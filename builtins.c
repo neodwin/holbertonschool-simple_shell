@@ -2,46 +2,51 @@
 
 /**
  * handle_exit - Handle the exit built-in command
- * @args: Array of command arguments (args[1] may contain exit status)
+ * @args: Array of command arguments (args[0] is "exit")
  *
- * Description: This function handles the 'exit' built-in command. It can:
- * 1. Exit with status 0 if no argument is provided
- * 2. Exit with the specified status if a valid number is provided
- * 3. Print an error and exit with status 2 if an invalid number is provided
- * The function validates the exit status to ensure it's a valid number.
+ * Description: Processes exit command with optional status.
+ * If no status provided, exits with status 0. If status is
+ * provided, validates it and exits with that status. Handles
+ * numeric conversion and validation of status argument.
  */
 void handle_exit(char **args)
 {
 	int status = 0;
+	int i;
 
 	if (args[1])
 	{
-		status = atoi(args[1]);
-		if (status < 0)
+		status = 0;
+		for (i = 0; args[1][i]; i++)
 		{
-			fprintf(stderr, "./hsh: 1: exit: Illegal number: %s\n",
-				args[1]);
-			status = 2;
+			if (args[1][i] < '0' || args[1][i] > '9')
+			{
+				fprintf(stderr, "./hsh: 1: exit: Illegal number: %s\n",
+					args[1]);
+				status = 2;
+				break;
+			}
+			status = status * 10 + (args[1][i] - '0');
 		}
 	}
+
+	cleanup(NULL, args);
 	exit(status);
 }
 
 /**
  * handle_builtin - Handle built-in shell commands
- * @args: Array of command arguments (args[0] is the command name)
+ * @args: Array of command arguments
  *
- * Description: This function checks if a command is a built-in and executes
- * it if it is. Currently supported built-ins are:
- * - exit: Exits the shell with an optional status
- * - env: Prints the current environment variables
- * The function returns 1 if a built-in was handled, 0 otherwise.
+ * Description: Checks if command is a built-in (exit or env)
+ * and executes appropriate handler. For env, prints all
+ * environment variables. For exit, calls exit handler.
  *
- * Return: 1 if built-in was handled, 0 if not a built-in
+ * Return: 1 if command was a built-in, 0 otherwise
  */
 int handle_builtin(char **args)
 {
-	int i;
+	char **env;
 
 	if (!args || !args[0])
 		return (0);
@@ -49,12 +54,13 @@ int handle_builtin(char **args)
 	if (strcmp(args[0], "exit") == 0)
 	{
 		handle_exit(args);
+		return (1);
 	}
 
 	if (strcmp(args[0], "env") == 0)
 	{
-		for (i = 0; environ[i]; i++)
-			printf("%s\n", environ[i]);
+		for (env = environ; *env; env++)
+			printf("%s\n", *env);
 		return (1);
 	}
 

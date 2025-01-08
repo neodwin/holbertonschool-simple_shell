@@ -6,8 +6,9 @@
  * @args: Array of command arguments (including command name)
  * @program_name: Name of the shell program for error messages
  *
- * Description: Runs command via execve. On error: prints msg,
- * frees memory, exits 127.
+ * Description: Executes the command using execve in a child process.
+ * If execution fails, prints error message with program name and
+ * command, frees allocated memory, and exits with status 127.
  */
 void execute_in_child(char *cmd_path, char **args, char *program_name)
 {
@@ -24,13 +25,11 @@ void execute_in_child(char *cmd_path, char **args, char *program_name)
  * parse_command - Parse a command string into an array of arguments
  * @command: The command string to parse
  *
- * Description: This function splits a command string
- * into an array of arguments using space, tab, and newline as delimiters.
- * It allocates memory for up to 32 arguments. Each argument is duplicated
- * in new memory. If any memory allocation fails, all previously allocated
- * memory is freed.
+ * Description: Splits command string into array of arguments using
+ * space, tab, and newline as delimiters. Allocates memory for up
+ * to 32 arguments. Each argument is duplicated in new memory.
  *
- * Return: Array of strings (arguments) or NULL if memory allocation fails
+ * Return: Array of strings (arguments) or NULL if allocation fails
  */
 char **parse_command(char *command)
 {
@@ -64,10 +63,9 @@ char **parse_command(char *command)
  * @cmd_path: The command path string to free
  * @args: The array of argument strings to free
  *
- * Description: This function handles memory cleanup after command execution.
- * It frees both the command path string and the array of argument strings.
- * It checks for NULL pointers before attempting to free memory to prevent
- * segmentation faults.
+ * Description: Handles memory cleanup after command execution.
+ * Frees both the command path string and array of argument
+ * strings. Checks for NULL before freeing to prevent errors.
  */
 void cleanup(char *cmd_path, char **args)
 {
@@ -87,14 +85,11 @@ void cleanup(char *cmd_path, char **args)
  * prepare_command - Prepare a command string for execution
  * @command: The command string to prepare
  *
- * Description: This function prepares a command for execution by:
- * 1. Removing leading whitespace
- * 2. Checking if the command is empty
- * 3. Parsing the command into arguments
- * 4. Checking if it's a built-in command
- * If it's a built-in command, it's handled here and NULL is returned.
+ * Description: Prepares command by removing leading whitespace,
+ * checking if empty, parsing into arguments, and checking if
+ * it's a built-in command. Returns NULL for empty/built-in.
  *
- * Return: Array of parsed arguments, or NULL if command is empty/built-in
+ * Return: Array of parsed arguments, or NULL if empty/built-in
  */
 char **prepare_command(char *command)
 {
@@ -124,13 +119,11 @@ char **prepare_command(char *command)
  * @command: The command string to execute
  * @program_name: Name of the shell program for error messages
  *
- * Description: This is the main command execution function that:
- * 1. Prepares the command (parsing and built-in checking)
- * 2. Finds the full path of the command
- * 3. Creates a child process
- * 4. Executes the command in the child process
- * 5. Waits for the command to complete
- * 6. Handles any errors that occur during execution
+ * Description: Main command execution function that handles:
+ * 1. Command preparation (parsing and built-in checking)
+ * 2. Path resolution for the command
+ * 3. Process creation and execution
+ * 4. Error handling and memory cleanup
  */
 void execute_command(char *command, char *program_name)
 {
