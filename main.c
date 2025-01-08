@@ -8,58 +8,26 @@
  */
 ssize_t read_input(char *buffer, size_t size)
 {
+	ssize_t bytes_read = 0;
 	ssize_t total_read = 0;
-	ssize_t bytes_read;
+	char c;
 
-	bytes_read = read(STDIN_FILENO, buffer, size - 1);
-	if (bytes_read > 0)
+	while (total_read < (ssize_t)(size - 1))
 	{
-		total_read = bytes_read;
-		buffer[total_read] = '\0';
+		bytes_read = read(STDIN_FILENO, &c, 1);
+		if (bytes_read <= 0)
+			return (bytes_read);
+
+		if (c == '\n')
+		{
+			buffer[total_read] = '\0';
+			return (total_read);
+		}
+
+		buffer[total_read++] = c;
 	}
-	return (bytes_read);
-}
-
-/**
- * trim_whitespace - Remove leading and trailing whitespace
- * @str: String to trim
- * Return: Pointer to trimmed string
- */
-char *trim_whitespace(char *str)
-{
-	char *end;
-
-	while (*str && (*str == ' ' || *str == '\t' || *str == '\n'))
-		str++;
-
-	if (*str == '\0')
-		return (str);
-
-	end = str + strlen(str) - 1;
-	while (end > str && (*end == ' ' || *end == '\t' || *end == '\n'))
-		end--;
-
-	*(end + 1) = '\0';
-	return (str);
-}
-
-/**
- * process_commands - Process multiple commands from input
- * @input: Input string containing commands
- * @program_name: Name of the shell program
- */
-void process_commands(char *input, char *program_name)
-{
-	char *command;
-
-	command = strtok(input, "\n");
-	while (command != NULL)
-	{
-		command = trim_whitespace(command);
-		if (*command != '\0')
-			execute_command(command, program_name);
-		command = strtok(NULL, "\n");
-	}
+	buffer[total_read] = '\0';
+	return (total_read);
 }
 
 /**
@@ -83,10 +51,10 @@ int main(int argc, char **argv)
 		if (bytes_read <= 0)
 			break;
 
-		process_commands(buffer, argv[0]);
+		execute_command(buffer, argv[0]);
 
 		if (!isatty(STDIN_FILENO))
-			break;
+			continue;
 	}
 	return (0);
 }
