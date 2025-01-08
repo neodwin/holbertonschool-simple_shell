@@ -1,10 +1,16 @@
 #include "shell.h"
 
 /**
- * try_path - Try to find command in a directory
+ * try_path - Attempt to find a command in a specific directory
  * @dir: Directory to search in
- * @command: Command to find
- * Return: Full path if found, NULL otherwise
+ * @command: Command name to look for
+ *
+ * Description: This function constructs a full path by combining a directory
+ * and command name, then checks if that path exists and is executable.
+ * It allocates memory for the full path and performs proper error checking
+ * on memory allocation and file status.
+ *
+ * Return: Full path to command if found and executable, NULL otherwise
  */
 char *try_path(const char *dir, const char *command)
 {
@@ -24,8 +30,15 @@ char *try_path(const char *dir, const char *command)
 }
 
 /**
- * find_path_in_env - Find PATH in environment variables
- * Return: PATH value or NULL if not found
+ * find_path_in_env - Find the PATH variable in environment
+ *
+ * Description: This function searches through the environment variables
+ * to find the PATH variable. If found, it returns a pointer to the value
+ * portion of PATH (after "PATH="). If PATH is not found in the environment,
+ * it returns NULL, ensuring the shell behaves correctly in minimal
+ * environments.
+ *
+ * Return: Pointer to PATH value if found, NULL if not found
  */
 char *find_path_in_env(void)
 {
@@ -41,8 +54,18 @@ char *find_path_in_env(void)
 
 /**
  * get_path - Get the full path of a command
- * @command: Command to find
- * Return: Full path of command if found, NULL otherwise
+ * @command: Command name to find
+ *
+ * Description: This function finds the full path of a command by:
+ * 1. Checking if it's already a path (starts with / or .)
+ * 2. Looking in PATH directories if it's a bare command
+ * The function handles:
+ * - Absolute paths (/bin/ls)
+ * - Relative paths (./script)
+ * - Commands in PATH (ls)
+ * - Memory allocation and cleanup
+ *
+ * Return: Full path to command if found, NULL if not found or on error
  */
 char *get_path(char *command)
 {

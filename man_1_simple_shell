@@ -1,54 +1,144 @@
-.TH HSH 1 "December 2023" "1.0" "Simple Shell Manual"
+.TH HSH 1 "January 2024" "Version 1.0" "HSH Manual"
 
 .SH NAME
-hsh \- simple UNIX command interpreter
+hsh \- Holberton Simple Shell
 
 .SH SYNOPSIS
 .B hsh
+[\fIfilename\fR]
 
 .SH DESCRIPTION
 .B hsh
-is a simple UNIX command line interpreter. It reads commands from standard input and executes them.
+is a simple UNIX command interpreter that executes commands read from standard input or from a file.
+It implements a subset of the sh shell functionality.
 
-.SH FEATURES
-.IP \[bu]
-Executes commands with arguments
-.IP \[bu]
-Handles the PATH environment variable
-.IP \[bu]
-Implements built-in commands: exit, env
-.IP \[bu]
-Supports both interactive and non-interactive mode
+.SH COMMAND EXECUTION
+The shell first checks if the command is a built-in. If not, it searches for the command in the directories
+listed in the PATH environment variable. If the command is found, the shell creates a new process to execute it.
+
+.SS Interactive Mode
+When invoked without arguments and with standard input connected to a terminal, the shell runs in interactive mode.
+It displays the prompt
+.B #cisfun$
+and waits for user input.
+
+.SS Non-Interactive Mode
+When standard input is not connected to a terminal, or when invoked with a filename argument,
+the shell reads and executes commands without displaying a prompt.
 
 .SH BUILT-IN COMMANDS
+The following built-in commands are supported:
+
 .TP
-.B exit
-Exits the shell
+.B exit [\fIstatus\fR]
+Exit the shell with a status of \fIstatus\fR. If \fIstatus\fR is omitted, the exit status is 0.
+
 .TP
 .B env
-Prints the current environment
+Print the current environment variables.
 
-.SH EXAMPLES
+.SH ENVIRONMENT
+The following environment variables affect the execution of the shell:
+
 .TP
-Basic command:
-.B $ ls
-.TP
-Command with arguments:
-.B $ ls -l
-.TP
-Using PATH:
-.B $ pwd
+.B PATH
+A colon-separated list of directories to search for commands. If PATH is not set or is empty,
+the shell searches only the current directory.
 
 .SH EXIT STATUS
+The shell returns the following exit status values:
 .TP
 .B 0
-Success
+Successful completion of a command.
 .TP
 .B 127
-Command not found
+Command not found.
+.TP
+.B 1-255
+Other error conditions or exit status of the last executed command.
 
-.SH AUTHOR
-Frederic Bourouliou <frederic.bourouliou@gmail.com>
+.SH EXAMPLES
+.PP
+Interactive mode:
+.PP
+.nf
+.RS
+$ ./hsh
+#cisfun$ ls
+file1 file2 file3
+#cisfun$ pwd
+/home/user/directory
+#cisfun$ exit
+$
+.RE
+.fi
+.PP
+Non-interactive mode:
+.PP
+.nf
+.RS
+$ echo "ls" | ./hsh
+file1 file2 file3
+$ echo "pwd" | ./hsh
+/home/user/directory
+.RE
+.fi
+
+.SH ERROR HANDLING
+.PP
+When a command is not found:
+.PP
+.nf
+.RS
+#cisfun$ nonexistentcommand
+./hsh: 1: nonexistentcommand: not found
+.RE
+.fi
+
+.SH FEATURES
+.TP
+\- Command execution with arguments
+.TP
+\- PATH environment variable handling
+.TP
+\- Built-in commands (exit, env)
+.TP
+\- Error handling with appropriate messages
+.TP
+\- Memory management
+.TP
+\- Support for both interactive and non-interactive modes
+
+.SH LIMITATIONS
+.TP
+\- No support for pipes or redirections
+.TP
+\- Limited set of built-in commands
+.TP
+\- No wildcard or pattern matching
+.TP
+\- No command history
+.TP
+\- No command line editing capabilities
+
+.SH FILES
+.TP
+.I /etc/environment
+System-wide environment variables.
 
 .SH SEE ALSO
-.BR sh(1) 
+.BR sh (1),
+.BR bash (1),
+.BR environ (7)
+
+.SH BUGS
+Report bugs to the project repository.
+
+.SH AUTHOR
+Written by Frederic <frederic.bourouliou@gmail.com>
+Written by Edwin <neodwin@gmail.com>
+Written by Ewan <darcoedwin@gmail.com>
+
+.SH COPYRIGHT
+Copyright © 2024 Frederic Bourouliou.
+License MIT: Permission is hereby granted, free of charge, to use, copy, modify, and distribute this software. 

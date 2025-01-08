@@ -1,10 +1,15 @@
 #include "shell.h"
 
 /**
- * read_input - Read input from stdin
- * @buffer: Buffer to store input
- * @size: Size of buffer
- * Return: Number of bytes read or -1 on error
+ * read_input - Read a line of input from standard input
+ * @buffer: Buffer to store the input
+ * @size: Size of the buffer
+ *
+ * Description: Reads input character by character until newline or buffer
+ * limit. Handles both interactive and non-interactive modes. For empty
+ * lines, it continues reading. Ensures proper string null-termination.
+ *
+ * Return: Number of bytes read, or -1 on error/EOF
  */
 ssize_t read_input(char *buffer, size_t size)
 {
@@ -33,8 +38,12 @@ ssize_t read_input(char *buffer, size_t size)
 }
 
 /**
- * interactive_mode - Handle interactive mode
- * @program_name: Name of the program
+ * interactive_mode - Handle the shell's interactive mode
+ * @program_name: Name of the shell program (argv[0])
+ *
+ * Description: This function implements the interactive shell mode where
+ * the prompt is displayed and user input is processed command by command.
+ * It continues until EOF is reached (Ctrl+D) or exit command is given.
  */
 void interactive_mode(char *program_name)
 {
@@ -52,8 +61,12 @@ void interactive_mode(char *program_name)
 }
 
 /**
- * non_interactive_mode - Handle non-interactive mode
- * @program_name: Name of the program
+ * non_interactive_mode - Handle the shell's non-interactive mode
+ * @program_name: Name of the shell program (argv[0])
+ *
+ * Description: Handles non-interactive shell mode (e.g., piped commands).
+ * Reads and executes commands without prompt. Processes until EOF is
+ * reached. Skips empty lines and handles execution errors.
  */
 void non_interactive_mode(char *program_name)
 {
@@ -79,10 +92,16 @@ void non_interactive_mode(char *program_name)
 }
 
 /**
- * main - Simple shell main function
- * @argc: Argument count
- * @argv: Argument vector
- * Return: Exit status
+ * main - Entry point for the simple shell program
+ * @argc: Argument count (unused)
+ * @argv: Argument vector (used for program name in error messages)
+ *
+ * Description: Main entry point of the shell. Determines whether to run
+ * in interactive or non-interactive mode based on terminal input. Shows
+ * prompt and handles input in interactive mode, processes from pipe/file
+ * in non-interactive mode.
+ *
+ * Return: Always returns 0 on normal termination
  */
 int main(int argc, char **argv)
 {
@@ -97,7 +116,11 @@ int main(int argc, char **argv)
 }
 
 /**
- * display_prompt - Display shell prompt
+ * display_prompt - Display the shell prompt
+ *
+ * Description: This function displays the shell prompt (#cisfun$) and
+ * immediately flushes stdout to ensure the prompt is displayed before
+ * waiting for user input. This is only used in interactive mode.
  */
 void display_prompt(void)
 {
