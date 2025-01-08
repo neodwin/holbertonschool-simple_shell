@@ -8,7 +8,7 @@ This shell project is a streamlined implementation of a command-line interpreter
 
 ## Features
 
-- Interactive command prompt (`#cisfun$`)
+- Interactive command prompt (`$`)
 - Command execution with arguments
 - PATH environment variable handling
 - Built-in commands: `exit` and `env`
@@ -89,11 +89,11 @@ gcc -Wall -Werror -Wextra -pedantic -std=gnu89 *.c -o hsh
 ### Interactive Mode
 ```bash
 $ ./hsh
-#cisfun$ ls
+$ ls
 hsh main.c shell.h
-#cisfun$ pwd
+$ pwd
 /home/user/simple_shell
-#cisfun$ exit
+$ exit
 $
 ```
 
@@ -124,8 +124,4 @@ $ cat test_script | ./hsh
     Edwin : https://github.com/neodwin
     Ewan : https://github.com/DARcodertech
     Frederic : https://github.com/FredBourouliou
-
-
-## License
-
-This project is licensed under the terms of the MIT license.
+    

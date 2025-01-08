@@ -28,7 +28,7 @@ extern char **environ; /* Array of environment variables */
 /**
  * display_prompt - Display the shell prompt
  *
- * Description: Shows the shell prompt '#cisfun$ ' and flushes stdout
+ * Description: Shows the shell prompt '$ ' and flushes stdout
  * to ensure immediate display. Only used in interactive mode.
  */
 void display_prompt(void);

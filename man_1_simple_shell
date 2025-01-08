@@ -19,7 +19,7 @@ listed in the PATH environment variable. If the command is found, the shell crea
 .SS Interactive Mode
 When invoked without arguments and with standard input connected to a terminal, the shell runs in interactive mode.
 It displays the prompt
-.B #cisfun$
+.B $
 and waits for user input.
 
 .SS Non-Interactive Mode
@@ -64,11 +64,11 @@ Interactive mode:
 .nf
 .RS
 $ ./hsh
-#cisfun$ ls
+$ ls
 file1 file2 file3
-#cisfun$ pwd
+$ pwd
 /home/user/directory
-#cisfun$ exit
+$ exit
 $
 .RE
 .fi
@@ -90,7 +90,7 @@ When a command is not found:
 .PP
 .nf
 .RS
-#cisfun$ nonexistentcommand
+$ nonexistentcommand
 ./hsh: 1: nonexistentcommand: not found
 .RE
 .fi
@@ -135,7 +135,7 @@ System-wide environment variables.
 Report bugs to the project repository.
 
 .SH AUTHOR
-Written by Frederic <frederic.bourouliou@gmail.com>
+Written by Frederic <bourouliou@gmail.com>
 Written by Edwin <neodwin@gmail.com>
 Written by Ewan <darcoedwin@gmail.com>
 
