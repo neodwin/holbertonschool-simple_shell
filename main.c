@@ -51,7 +51,8 @@ int main(int argc, char **argv)
 		if (bytes_read <= 0)
 			break;
 
-		execute_command(buffer, argv[0]);
+		if (bytes_read > 0)
+			execute_command(buffer, argv[0]);
 
 		if (!isatty(STDIN_FILENO))
 			continue;
