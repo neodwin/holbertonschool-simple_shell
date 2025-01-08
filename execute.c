@@ -8,7 +8,7 @@
  */
 void execute_in_child(char *cmd_path, char **args, char *program_name)
 {
-	if (execve(cmd_path, args, environ ? environ : NULL) == -1)
+	if (execve(cmd_path, args, environ) == -1)
 	{
 		fprintf(stderr, "%s: 1: %s: not found\n",
 			program_name, args[0]);
@@ -112,10 +112,10 @@ void execute_command(char *command, char *program_name)
 	if (!args)
 		return;
 
-	cmd_path = get_path(args[0], program_name);
+	cmd_path = get_path(args[0]);
 	if (!cmd_path)
 	{
-		fprintf(stderr, "%s: 1: %s: command not found\n",
+		fprintf(stderr, "%s: 1: %s: not found\n",
 			program_name, args[0]);
 		cleanup(cmd_path, args);
 		exit(127);

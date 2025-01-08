@@ -18,32 +18,16 @@ ssize_t read_input(char *buffer, size_t size)
 		if (bytes_read <= 0)
 			return (bytes_read);
 
-		buffer[total_read++] = c;
 		if (c == '\n')
 		{
 			buffer[total_read] = '\0';
 			return (total_read);
 		}
+
+		buffer[total_read++] = c;
 	}
 	buffer[total_read] = '\0';
 	return (total_read);
-}
-
-/**
- * process_commands - Process multiple commands from input
- * @input: Input string containing commands
- * @program_name: Name of the program
- */
-void process_commands(char *input, char *program_name)
-{
-	char *command;
-
-	command = strtok(input, "\n");
-	while (command != NULL)
-	{
-		execute_command(command, program_name);
-		command = strtok(NULL, "\n");
-	}
 }
 
 /**
@@ -67,7 +51,7 @@ int main(int argc, char **argv)
 		if (bytes_read <= 0)
 			break;
 
-		process_commands(buffer, argv[0]);
+		execute_command(buffer, argv[0]);
 
 		if (!isatty(STDIN_FILENO))
 			continue;
