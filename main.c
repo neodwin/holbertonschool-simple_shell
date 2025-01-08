@@ -65,7 +65,7 @@ int main(int argc, char **argv)
  */
 void display_prompt(void)
 {
-	printf("#cisfun$ ");
+	printf("$ ");
 	fflush(stdout);
 }
 
