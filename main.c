@@ -40,6 +40,7 @@ int main(int argc, char **argv)
 {
 	char buffer[1024];
 	ssize_t bytes_read;
+	char *line_start, *line_end;
 	(void)argc;
 
 	while (1)
@@ -51,7 +52,20 @@ int main(int argc, char **argv)
 		if (bytes_read <= 0)
 			break;
 
-		execute_command(buffer, argv[0]);
+		line_start = buffer;
+		while (line_start < buffer + bytes_read)
+		{
+			line_end = strchr(line_start, '\n');
+			if (line_end)
+				*line_end = '\0';
+
+			if (*line_start != '\0')  /* Ignore empty lines */
+				execute_command(line_start, argv[0]);
+
+			if (!line_end)
+				break;
+			line_start = line_end + 1;
+		}
 
 		if (!isatty(STDIN_FILENO))
 			continue;
