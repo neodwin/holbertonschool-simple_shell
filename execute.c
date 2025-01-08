@@ -8,7 +8,7 @@
  */
 void execute_in_child(char *cmd_path, char **args, char *program_name)
 {
-	if (execve(cmd_path, args, environ) == -1)
+	if (execve(cmd_path, args, environ ? environ : NULL) == -1)
 	{
 		fprintf(stderr, "%s: 1: %s: not found\n",
 			program_name, args[0]);

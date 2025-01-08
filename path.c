@@ -30,17 +30,16 @@ char *try_path(const char *dir, const char *command)
 char *find_path_in_env(void)
 {
 	int i;
-	char *path = NULL;
+
+	if (!environ)
+		return ("/bin");
 
 	for (i = 0; environ[i]; i++)
 	{
 		if (strncmp(environ[i], "PATH=", 5) == 0)
-		{
-			path = environ[i] + 5;
-			return (path);
-		}
+			return (environ[i] + 5);
 	}
-	return ("/bin:/usr/bin"); /* Default PATH */
+	return ("/bin");
 }
 
 /**
