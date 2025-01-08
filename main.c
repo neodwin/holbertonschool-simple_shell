@@ -51,15 +51,14 @@ char *trim_whitespace(char *str)
 void process_commands(char *input, char *program_name)
 {
 	char *command;
-	char *saveptr;
 
-	command = strtok_r(input, "\n", &saveptr);
+	command = strtok(input, "\n");
 	while (command != NULL)
 	{
 		command = trim_whitespace(command);
 		if (*command != '\0')
 			execute_command(command, program_name);
-		command = strtok_r(NULL, "\n", &saveptr);
+		command = strtok(NULL, "\n");
 	}
 }
 
