@@ -2,37 +2,19 @@
 
 /**
  * execute_in_child - Execute command in child process
- * @command: Command to execute
+ * @cmd_path: Path to command
  * @args: Command arguments
- * @program_name: Name of the shell program
- * Return: Exit status of command
+ * @program_name: Name of shell program
  */
-int execute_in_child(char *command, char **args, char *program_name)
+void execute_in_child(char *cmd_path, char **args, char *program_name)
 {
-	pid_t pid;
-	int status;
-
-	pid = fork();
-	if (pid == -1)
+	if (execve(cmd_path, args, environ) == -1)
 	{
-		perror(program_name);
-		return (1);
+		fprintf(stderr, "%s: 1: %s: not found\n",
+			program_name, args[0]);
+		free(cmd_path);
+		exit(127);
 	}
-	if (pid == 0)
-	{
-		if (execve(command, args, environ) == -1)
-		{
-			perror(program_name);
-			exit(127);
-		}
-	}
-	else
-	{
-		waitpid(pid, &status, 0);
-		if (WIFEXITED(status))
-			return (WEXITSTATUS(status));
-	}
-	return (0);
 }
 
 /**
@@ -42,123 +24,115 @@ int execute_in_child(char *command, char **args, char *program_name)
  */
 char **parse_command(char *command)
 {
-	char **args = malloc(sizeof(char *) * MAX_ARGS);
-	char *cmd_copy, *token;
+	char **args = malloc(sizeof(char *) * 32);
+	char *token;
 	int i = 0;
 
 	if (!args)
 		return (NULL);
 
-	cmd_copy = strdup(command);
-	if (!cmd_copy)
-	{
-		free(args);
-		return (NULL);
-	}
-
-	token = strtok(cmd_copy, " \t\n");
-	while (token && i < MAX_ARGS - 1)
+	token = strtok(command, " \t\n");
+	while (token && i < 31)
 	{
 		args[i] = strdup(token);
 		if (!args[i])
 		{
-			cleanup(args);
-			free(cmd_copy);
+			while (--i >= 0)
+				free(args[i]);
+			free(args);
 			return (NULL);
 		}
 		i++;
 		token = strtok(NULL, " \t\n");
 	}
 	args[i] = NULL;
-	free(cmd_copy);
 	return (args);
 }
 
 /**
- * cleanup - Free memory used by arguments array
+ * cleanup - Free allocated memory
+ * @cmd_path: Command path to free
  * @args: Arguments array to free
  */
-void cleanup(char **args)
+void cleanup(char *cmd_path, char **args)
 {
 	int i;
 
-	if (!args)
-		return;
-
-	for (i = 0; args[i]; i++)
-		free(args[i]);
-	free(args);
+	if (cmd_path)
+		free(cmd_path);
+	if (args)
+	{
+		for (i = 0; args[i]; i++)
+			free(args[i]);
+		free(args);
+	}
 }
 
 /**
- * prepare_command - Prepare command by trimming spaces
- * @command: Command string to prepare
- * Return: Prepared command string
+ * prepare_command - Prepare command for execution
+ * @command: Command string
+ * Return: Parsed arguments array or NULL on error
  */
-char *prepare_command(char *command)
+char **prepare_command(char *command)
 {
-	char *start = command;
-	char *end;
+	char **args;
 
-	if (!command)
+	while (*command == ' ' || *command == '\t')
+		command++;
+
+	if (*command == '\0')
 		return (NULL);
 
-	/* Skip leading spaces */
-	while (*start && (*start == ' ' || *start == '\t'))
-		start++;
-
-	if (!*start)
+	args = parse_command(command);
+	if (!args)
 		return (NULL);
 
-	/* Find end of string and trim trailing spaces */
-	end = start + strlen(start) - 1;
-	while (end > start && (*end == ' ' || *end == '\t' || *end == '\n'))
-		end--;
-	*(end + 1) = '\0';
+	if (handle_builtin(args))
+	{
+		cleanup(NULL, args);
+		return (NULL);
+	}
 
-	if (start != command)
-		memmove(command, start, strlen(start) + 1);
-
-	return (command);
+	return (args);
 }
 
 /**
  * execute_command - Execute a command
  * @command: Command to execute
  * @program_name: Name of the shell program
- * Return: Exit status of command
  */
-int execute_command(char *command, char *program_name)
+void execute_command(char *command, char *program_name)
 {
+	pid_t pid;
+	int status;
 	char **args;
-	char *cmd_path;
-	int status = 0;
+	char *cmd_path = NULL;
 
-	command = prepare_command(command);
-	if (!command || !*command)
-		return (0);
+	args = prepare_command(command);
+	if (!args)
+		return;
 
-	if (handle_builtin(command))
-		return (0);
-
-	args = parse_command(command);
-	if (!args || !args[0])
-	{
-		cleanup(args);
-		return (0);
-	}
-
-	cmd_path = get_path(args[0], environ);
+	cmd_path = get_path(args[0]);
 	if (!cmd_path)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n", program_name, args[0]);
-		cleanup(args);
-		return (127);
+		fprintf(stderr, "%s: 1: %s: not found\n",
+			program_name, args[0]);
+		cleanup(cmd_path, args);
+		exit(127);
 	}
 
-	status = execute_in_child(cmd_path, args, program_name);
-	free(cmd_path);
-	cleanup(args);
-	return (status);
+	pid = fork();
+	if (pid == -1)
+	{
+		perror("fork");
+		cleanup(cmd_path, args);
+		return;
+	}
+
+	if (pid == 0)
+		execute_in_child(cmd_path, args, program_name);
+
+	waitpid(pid, &status, 0);
+	cleanup(cmd_path, args);
 }
 
