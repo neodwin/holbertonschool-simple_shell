@@ -9,25 +9,49 @@
 ssize_t read_input(char *buffer, size_t size)
 {
 	ssize_t bytes_read = 0;
-	ssize_t total_read = 0;
+	size_t pos = 0;
 	char c;
 
-	while (total_read < (ssize_t)(size - 1))
+	if (!buffer || size == 0)
+		return (-1);
+
+	while (pos < size - 1)
 	{
 		bytes_read = read(STDIN_FILENO, &c, 1);
 		if (bytes_read <= 0)
-			return (bytes_read);
+			return (pos == 0 ? bytes_read : (ssize_t)pos);
 
+		buffer[pos++] = c;
 		if (c == '\n')
 		{
-			buffer[total_read] = '\0';
-			return (total_read);
+			buffer[pos] = '\0';
+			return (pos);
 		}
-
-		buffer[total_read++] = c;
 	}
-	buffer[total_read] = '\0';
-	return (total_read);
+	buffer[pos] = '\0';
+	return (pos);
+}
+
+/**
+ * process_command - Process and execute a single command
+ * @command: Command string to process
+ * @program_name: Name of the shell program
+ * Return: Status of command execution
+ */
+int process_command(char *command, char *program_name)
+{
+	char *cmd = strdup(command);
+	int status;
+
+	if (!cmd)
+		return (-1);
+
+	if (cmd[strlen(cmd) - 1] == '\n')
+		cmd[strlen(cmd) - 1] = '\0';
+
+	status = execute_command(cmd, program_name);
+	free(cmd);
+	return (status);
 }
 
 /**
@@ -39,6 +63,7 @@ ssize_t read_input(char *buffer, size_t size)
 int main(int argc, char **argv)
 {
 	char buffer[1024];
+	char *line;
 	ssize_t bytes_read;
 	(void)argc;
 
@@ -51,11 +76,12 @@ int main(int argc, char **argv)
 		if (bytes_read <= 0)
 			break;
 
-		if (bytes_read > 0)
-			execute_command(buffer, argv[0]);
-
-		if (!isatty(STDIN_FILENO))
-			continue;
+		line = strtok(buffer, "\n");
+		while (line)
+		{
+			process_command(line, argv[0]);
+			line = strtok(NULL, "\n");
+		}
 	}
 	return (0);
 }

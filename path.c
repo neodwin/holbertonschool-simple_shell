@@ -1,70 +1,129 @@
 #include "shell.h"
 
 /**
- * try_path - Try to find command in a directory
+ * normalize_path - Normalize a path by removing extra slashes and handling ..
+ * @path: Path to normalize
+ * Return: Normalized path (must be freed) or NULL
+ */
+char *normalize_path(const char *path)
+{
+	char *norm_path, *current;
+	size_t len;
+	struct stat st;
+
+	if (!path)
+		return (NULL);
+
+	len = strlen(path) + 1;
+	norm_path = malloc(len);
+	if (!norm_path)
+		return (NULL);
+
+	strcpy(norm_path, path);
+	current = norm_path;
+
+	/* Remove extra slashes */
+	while (*current)
+	{
+		if (*current == '/' && *(current + 1) == '/')
+		{
+			memmove(current, current + 1, strlen(current));
+			continue;
+		}
+		current++;
+	}
+
+	/* Check if file exists and is executable */
+	if (stat(norm_path, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (norm_path);
+
+	free(norm_path);
+	return (NULL);
+}
+
+/**
+ * try_path - Try to find command in a specific directory
  * @dir: Directory to search in
  * @command: Command to find
- * Return: Full path if found, NULL otherwise
+ * Return: Full path if found and executable, NULL otherwise
  */
 char *try_path(const char *dir, const char *command)
 {
-	char *cmd_path;
+	char *full_path;
+	size_t dir_len, cmd_len;
 	struct stat st;
 
-	cmd_path = malloc(strlen(dir) + strlen(command) + 2);
-	if (!cmd_path)
+	if (!dir || !command)
 		return (NULL);
 
-	sprintf(cmd_path, "%s/%s", dir, command);
-	if (stat(cmd_path, &st) == 0 && (st.st_mode & S_IXUSR))
-		return (cmd_path);
+	dir_len = strlen(dir);
+	cmd_len = strlen(command);
+	full_path = malloc(dir_len + cmd_len + 2);
+	if (!full_path)
+		return (NULL);
 
-	free(cmd_path);
+	strcpy(full_path, dir);
+	if (dir_len > 0 && dir[dir_len - 1] != '/')
+		strcat(full_path, "/");
+	strcat(full_path, command);
+
+	if (stat(full_path, &st) == 0 && (st.st_mode & S_IXUSR))
+		return (full_path);
+
+	free(full_path);
 	return (NULL);
 }
 
 /**
  * find_path_in_env - Find PATH in environment variables
+ * @env: Environment variables array
  * Return: PATH value or NULL if not found
  */
-char *find_path_in_env(void)
+char *find_path_in_env(char **env)
 {
 	int i;
-	char *path = NULL;
+	const char *prefix = "PATH=";
+	size_t prefix_len = strlen(prefix);
 
-	for (i = 0; environ[i]; i++)
+	if (!env)
+		return (NULL);
+
+	for (i = 0; env[i]; i++)
 	{
-		if (strncmp(environ[i], "PATH=", 5) == 0)
-		{
-			path = environ[i] + 5;
-			return (path);
-		}
+		if (strncmp(env[i], prefix, prefix_len) == 0)
+			return (env[i] + prefix_len);
 	}
-	return ("/bin:/usr/bin"); /* Default PATH */
+	return (NULL);
 }
 
 /**
- * get_path - Get the full path of a command
+ * get_path - Get full path for a command
  * @command: Command to find
- * Return: Full path of command if found, NULL otherwise
+ * @env: Environment variables
+ * Return: Full path if found, NULL otherwise
  */
-char *get_path(char *command)
+char *get_path(const char *command, char **env)
 {
-	char *path_env, *path_copy, *dir, *cmd_path;
+	char *path_env, *path_copy = NULL, *dir, *result = NULL;
 	struct stat st;
 
-	if (!command)
+	if (!command || !command[0])
 		return (NULL);
 
-	if (command[0] == '/' || command[0] == '.' ||
-	    strstr(command, "..") != NULL)
+	/* Handle absolute path */
+	if (command[0] == '/')
 	{
 		if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
 			return (strdup(command));
 		return (NULL);
 	}
 
-	path_env = find_path_in_env();
+	/* Handle relative path */
+	if (command[0] == '.' || strstr(command, "/"))
+		return (normalize_path(command));
+
+	/* Search in PATH */
+	path_env = find_path_in_env(env);
 	if (!path_env)
 		return (NULL);
 
@@ -73,16 +132,12 @@ char *get_path(char *command)
 		return (NULL);
 
 	dir = strtok(path_copy, ":");
-	while (dir)
+	while (dir && !result)
 	{
-		cmd_path = try_path(dir, command);
-		if (cmd_path)
-		{
-			free(path_copy);
-			return (cmd_path);
-		}
+		result = try_path(dir, command);
 		dir = strtok(NULL, ":");
 	}
+
 	free(path_copy);
-	return (NULL);
+	return (result);
 }
