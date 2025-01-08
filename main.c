@@ -21,13 +21,61 @@ ssize_t read_input(char *buffer, size_t size)
 		if (c == '\n')
 		{
 			buffer[total_read] = '\0';
-			return (total_read);
+			if (total_read > 0)
+				return (total_read);
+			continue;
 		}
 
 		buffer[total_read++] = c;
 	}
 	buffer[total_read] = '\0';
 	return (total_read);
+}
+
+/**
+ * interactive_mode - Handle interactive mode
+ * @program_name: Name of the program
+ */
+void interactive_mode(char *program_name)
+{
+	char buffer[1024];
+	ssize_t bytes_read;
+
+	while (1)
+	{
+		display_prompt();
+		bytes_read = read_input(buffer, sizeof(buffer));
+		if (bytes_read <= 0)
+			break;
+		execute_command(buffer, program_name);
+	}
+}
+
+/**
+ * non_interactive_mode - Handle non-interactive mode
+ * @program_name: Name of the program
+ */
+void non_interactive_mode(char *program_name)
+{
+	char buffer[1024];
+	ssize_t bytes_read;
+	int i;
+
+	while (1)
+	{
+		bytes_read = read_input(buffer, sizeof(buffer));
+		if (bytes_read <= 0)
+			break;
+
+		for (i = 0; buffer[i] != '\0'; i++)
+		{
+			if (buffer[i] != ' ' && buffer[i] != '\t')
+			{
+				execute_command(buffer, program_name);
+				break;
+			}
+		}
+	}
 }
 
 /**
@@ -38,38 +86,13 @@ ssize_t read_input(char *buffer, size_t size)
  */
 int main(int argc, char **argv)
 {
-	char buffer[1024];
-	ssize_t bytes_read;
-	char *line_start, *line_end;
 	(void)argc;
 
-	while (1)
-	{
-		if (isatty(STDIN_FILENO))
-			display_prompt();
+	if (isatty(STDIN_FILENO))
+		interactive_mode(argv[0]);
+	else
+		non_interactive_mode(argv[0]);
 
-		bytes_read = read_input(buffer, sizeof(buffer));
-		if (bytes_read <= 0)
-			break;
-
-		line_start = buffer;
-		while (line_start < buffer + bytes_read)
-		{
-			line_end = strchr(line_start, '\n');
-			if (line_end)
-				*line_end = '\0';
-
-			if (*line_start != '\0')  /* Ignore empty lines */
-				execute_command(line_start, argv[0]);
-
-			if (!line_end)
-				break;
-			line_start = line_end + 1;
-		}
-
-		if (!isatty(STDIN_FILENO))
-			continue;
-	}
 	return (0);
 }
 
