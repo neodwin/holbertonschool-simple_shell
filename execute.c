@@ -142,7 +142,7 @@ void execute_command(char *command, char *program_name)
 		fprintf(stderr, "%s: 1: %s: not found\n",
 			program_name, args[0]);
 		cleanup(cmd_path, args);
-		exit(127);
+		return;
 	}
 
 	pid = fork();
