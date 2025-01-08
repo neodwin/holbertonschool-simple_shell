@@ -80,7 +80,7 @@ char **prepare_command(char *command)
 	while (*command == ' ' || *command == '\t')
 		command++;
 
-	if (*command == '\0')
+	if (*command == '\0' || *command == '\n')
 		return (NULL);
 
 	args = parse_command(command);
@@ -118,7 +118,7 @@ void execute_command(char *command, char *program_name)
 		fprintf(stderr, "%s: 1: %s: not found\n",
 			program_name, args[0]);
 		cleanup(cmd_path, args);
-		exit(127);
+		return;
 	}
 
 	pid = fork();
