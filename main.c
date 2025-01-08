@@ -37,13 +37,12 @@ ssize_t read_input(char *buffer, size_t size)
 void process_commands(char *input, char *program_name)
 {
 	char *command;
-	char *saveptr = NULL;
 
-	command = strtok_r(input, "\n", &saveptr);
+	command = strtok(input, "\n");
 	while (command != NULL)
 	{
 		execute_command(command, program_name);
-		command = strtok_r(NULL, "\n", &saveptr);
+		command = strtok(NULL, "\n");
 	}
 }
 
