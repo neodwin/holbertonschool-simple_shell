@@ -4,9 +4,10 @@
  * try_path - Try to find command in a directory
  * @dir: Directory to search in
  * @command: Command to find
+ * @program_name: Program name
  * Return: Full path if found, NULL otherwise
  */
-char *try_path(const char *dir, const char *command)
+char *try_path(const char *dir, const char *command, char *program_name)
 {
 	char *cmd_path;
 	struct stat st;
@@ -16,8 +17,18 @@ char *try_path(const char *dir, const char *command)
 		return (NULL);
 
 	sprintf(cmd_path, "%s/%s", dir, command);
-	if (stat(cmd_path, &st) == 0 && (st.st_mode & S_IXUSR))
-		return (cmd_path);
+	if (stat(cmd_path, &st) == 0)
+	{
+		if (!(st.st_mode & S_IXUSR))
+		{
+			fprintf(stderr, "%s: 1: %s: Permission denied\n",
+				program_name, command);
+			free(cmd_path);
+			exit(126);
+		}
+		if (S_ISREG(st.st_mode))
+			return (cmd_path);
+	}
 
 	free(cmd_path);
 	return (NULL);
@@ -45,9 +56,10 @@ char *find_path_in_env(void)
 /**
  * get_path - Get the full path of a command
  * @command: Command to find
+ * @program_name: Program name
  * Return: Full path of command if found, NULL otherwise
  */
-char *get_path(char *command)
+char *get_path(char *command, char *program_name)
 {
 	char *path_env, *path_copy, *dir, *cmd_path;
 	struct stat st;
@@ -58,8 +70,17 @@ char *get_path(char *command)
 	if (command[0] == '/' || command[0] == '.' ||
 	    strstr(command, "..") != NULL)
 	{
-		if (stat(command, &st) == 0 && (st.st_mode & S_IXUSR))
-			return (strdup(command));
+		if (stat(command, &st) == 0)
+		{
+			if (!(st.st_mode & S_IXUSR))
+			{
+				fprintf(stderr, "%s: 1: %s: Permission denied\n",
+					program_name, command);
+				exit(126);
+			}
+			if (S_ISREG(st.st_mode))
+				return (strdup(command));
+		}
 		return (NULL);
 	}
 
@@ -74,7 +95,7 @@ char *get_path(char *command)
 	dir = strtok(path_copy, ":");
 	while (dir)
 	{
-		cmd_path = try_path(dir, command);
+		cmd_path = try_path(dir, command, program_name);
 		if (cmd_path)
 		{
 			free(path_copy);

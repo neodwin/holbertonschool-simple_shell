@@ -112,10 +112,10 @@ void execute_command(char *command, char *program_name)
 	if (!args)
 		return;
 
-	cmd_path = get_path(args[0]);
+	cmd_path = get_path(args[0], program_name);
 	if (!cmd_path)
 	{
-		fprintf(stderr, "%s: 1: %s: not found\n",
+		fprintf(stderr, "%s: 1: %s: command not found\n",
 			program_name, args[0]);
 		cleanup(cmd_path, args);
 		exit(127);
