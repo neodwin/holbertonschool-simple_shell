@@ -76,14 +76,13 @@ void cleanup(char *cmd_path, char **args)
 char **prepare_command(char *command)
 {
 	char **args;
+	char *trimmed_command;
 
-	while (*command == ' ' || *command == '\t')
-		command++;
-
-	if (*command == '\0')
+	trimmed_command = trim_whitespace(command);
+	if (*trimmed_command == '\0')
 		return (NULL);
 
-	args = parse_command(command);
+	args = parse_command(trimmed_command);
 	if (!args)
 		return (NULL);
 
@@ -118,7 +117,7 @@ void execute_command(char *command, char *program_name)
 		fprintf(stderr, "%s: 1: %s: not found\n",
 			program_name, args[0]);
 		cleanup(cmd_path, args);
-		exit(127);
+		return;
 	}
 
 	pid = fork();
