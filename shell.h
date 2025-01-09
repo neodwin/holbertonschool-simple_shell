@@ -8,7 +8,7 @@
  * for the simple shell implementation. The shell executes commands,
  * handles PATH resolution, and implements basic built-in commands.
  *
- * Author: Frederic Bourouliou
+ * Author: Frederic Bourouliou, Ewan Lemaire, Edwin Dervaux.
  ******************************************************************/
 
 /* Standard Library Includes */
